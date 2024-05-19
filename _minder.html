@@ -136,6 +136,7 @@
 
                 if (field === 'meter') {
                     this.circle.setRadius(parseInt(newValue));
+                    this.retrieveUsers()
 
                 } else if (field === 'gender') {
                     this.retrieveUsers();
@@ -228,7 +229,7 @@
                         map,
                         position,
                         icon: {
-                            url: student.photoURL || 'image/photo.png',
+                            url: student.photo || 'image/photo.png',
                             scaledSize: new gm.Size(34, 34),
                         },
                     });
