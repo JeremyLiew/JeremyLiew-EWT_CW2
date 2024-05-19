@@ -85,6 +85,8 @@
         const SHAPES = DB.collection('shapes');
         let unsubscribe = null;
 
+        const STUDENTS = firebase.firestore().collection('user');
+
         // TODO:
         const AUTH = firebase.auth();
         const STORAGE = firebase.storage();
