@@ -70,6 +70,7 @@
             lng: 0,
             acc: 0,
             markers: [],
+            students: [],
         }),
 
         methods: {
@@ -108,7 +109,39 @@
                 STUDENTS.doc(this.$root.user.email).set(payload,{ merge: true });
 
                 console.log(this.$root.user)
-            }
+            },
+
+            async retrieveUsers() {
+                try {
+                    const querySnapshot = await STUDENTS.get();
+                    querySnapshot.forEach(doc => {
+                        const student = doc.data();
+                        if (doc.id !== this.$root.user.email.toLowerCase()) {
+                            this.students.push(student);
+                        }
+                    });
+
+                    this.plotMarkers();
+                } catch (error) {
+                    console.error('Error retrieving users:', error);
+                }
+            },
+
+            plotMarkers() {
+                for (const student of this.students) {
+                    const position = new gm.LatLng(student.latitude, student.longitude);
+                    const marker = new gm.Marker({
+                        map,
+                        position,
+                        icon: {
+                            url: student.photoURL || 'image/photo.png',
+                            scaledSize: new gm.Size(34, 34),
+                        },
+                    });
+
+                    this.markers.push(marker);
+                }
+            },
         },
 
         created() {
@@ -139,10 +172,16 @@
             panel.index = 0;
             map.controls[gm.ControlPosition.TOP_LEFT].push(panel);
 
-            this.player = new gm.Marker({
-                map,
-                animation: gm.Animation.DROP,
-            });
+            if(this.$root.user){
+                this.player = new gm.Marker({
+                    map,
+                    animation: gm.Animation.DROP,
+                    icon: {
+                        url: this.$root.user.photoURL || 'image/photo.png',
+                        scaledSize: new gm.Size(34, 34),
+                    },
+                });
+            }
 
             // gm.event.addListenerOnce(map, 'bounds_changed', e => {
             //     const colors = ['red', 'green', 'blue'];
@@ -172,6 +211,8 @@
                     this.getLocation();
                 }
             });
+
+            this.retrieveUsers();
 
             // const addMarker = (position, color) => {
             //     const m = new gm.Marker({
