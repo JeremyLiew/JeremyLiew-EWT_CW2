@@ -54,7 +54,7 @@
                         <option value="40000">40000</option>
                         <option value="60000">60000</option>
                         <option value="80000">80000</option>
-                    </select>      
+                    </select>
                 </td></tr>
 
                 <tr><td>Gender</td><td>
@@ -63,11 +63,18 @@
                         <option value="all">All</option>
                         <option value="M">Male</option>
                         <option value="F">Female</option>
-                    </select>        
+                    </select>
                 </td></tr>
 
                 <tr><td>Location </td><td>{{ lat.toFixed(3) }}, {{ lng.toFixed(3) }}</td></tr>
-                <button @click="clearMarkers">Clear</button>
+
+                <tr v-for="student in nearbyStudents" :key="student.id">
+                    <td>{{ student.name }}</td>
+                    <!-- Add more table cells for additional student data -->
+                </tr>
+                <tr v-if="nearbyStudents.length == 0">
+                    <td colspan="2" class="no-users">No nearby users found</td>
+                </tr>
             </table>
         </div>
 
@@ -75,8 +82,6 @@
 
         <template>
             <div id="panel">
-                <table>
-                </table>
             </div>
         </template>
     </main>
@@ -95,6 +100,7 @@
             acc: 0,
             markers: [],
             students: [],
+            nearbyStudents: [],
         }),
 
         methods: {
@@ -173,6 +179,14 @@
                             this.students.push(student);
                         }
                     });
+
+                    this.nearbyStudents = this.students.filter(student => {
+                        const studentPosition = new gm.LatLng(student.latitude, student.longitude);
+                        const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, this.player.getPosition());
+                        // Convert distance from meters to kilometers and check if it's within the specified radius
+                        return distance / 1000 <= parseInt(this.meter) / 1000;
+                    });
+
                     this.plotMarkers();
                 } catch (error) {
                     console.error('Error retrieving users:', error);
@@ -217,7 +231,7 @@
 
         mounted() {
             map = new gm.Map(document.getElementById('map'), {
-                center: { lat: 0, lng: 0 }, // Placeholder center
+                center,
                 zoom: 16,
                 disableDefaultUI: true,
                 disableDoubleClickZoom: true,
@@ -242,7 +256,7 @@
 
             const info = new gm.InfoWindow();
 
-            let timeout = null; // Timeout id
+            let timeout = null;
 
             navigator.permissions.query({ name: 'geolocation' }).then(result => {
                 if (result.state == 'granted') {
