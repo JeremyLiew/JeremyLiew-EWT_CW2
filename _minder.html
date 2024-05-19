@@ -92,10 +92,23 @@
                 const p = new gm.LatLng(this.lat, this.lng);
                 this.player.setPosition(p);
                 map.panTo(p);
+
+                this.saveCoordToCloud()
             },
             fail(error) {
                 alert(`ERROR: (${error.code}) ${error.message}`);
             },
+            saveCoordToCloud(){
+                let payload = {
+                    latitude: this.lat,
+                    longitude: this.lng,
+                    accuracy: this.acc
+                }
+
+                STUDENTS.doc(this.$root.user.email).set(payload,{ merge: true });
+
+                console.log(this.$root.user)
+            }
         },
 
         created() {

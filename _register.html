@@ -124,15 +124,14 @@
                             .then(url => user.updateProfile({ photoURL: url }));
 
                             const data =
-                            { 
-                                email : this.email , 
-                                gender : this.gender 
+                            {
+                                gender : this.gender
                             };
 
-                            STUDENTS.doc(this.email).set(data);
+                            STUDENTS.doc(this.email.toLowerCase()).set(data);
                         })
                     .then(() =>{
-                        
+
                         this.$root.unblock();
                         this.$router.push('/');
                     })
