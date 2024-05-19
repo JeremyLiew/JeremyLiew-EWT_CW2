@@ -2,7 +2,7 @@
     :root {
         display: grid;
         grid: auto / 200px 1fr;
-        gap: 10px;
+        gap: 40px;
     }
 
     #map {
@@ -45,11 +45,32 @@
     <main>
         <div>
             <table class="table">
-                <tr><td>Latitude </td><td>{{ lat.toFixed(6) }}</td></tr>
-                <tr><td>Longitude</td><td>{{ lng.toFixed(6) }}</td></tr>
-                <tr><td>Accuracy </td><td>{{ acc.toFixed(3) }} m</td></tr>
+                <tr><td>Meter</td><td>
+                    <select v-model="meter" @change="change($event, 'meter')">
+                        <option disabled value="">Please select one</option>
+                        <option value="5000">5000</option>
+                        <option value="10000">10000</option>
+                        <option value="20000">20000</option>
+                        <option value="40000">40000</option>
+                        <option value="60000">60000</option>
+                        <option value="80000">80000</option>
+                    </select>      
+                </td></tr>
+
+                <tr><td>Gender</td><td>
+                    <select v-model="gender" @change="change($event, 'gender')">
+                        <option disabled value="">Please select one</option>
+                        <option value="all">All</option>
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                    </select>        
+                </td></tr>
+
+                <tr><td>Location </td><td>{{ lat.toFixed(3) }}, {{ lng.toFixed(3) }}</td></tr>
             </table>
         </div>
+
+
         <div id="map"></div>
 
         <template>
@@ -66,6 +87,8 @@
     app.component({
         data: () => ({
             player: null,
+            meter: '',
+            gender: '',
             lat: 0,
             lng: 0,
             acc: 0,
@@ -73,6 +96,17 @@
         }),
 
         methods: {
+            change(event, field){
+                const newValue = event.target.value;
+
+                if (field === 'meter') {
+                    console.log('Meter changed to:', newValue);
+
+                } else if (field === 'gender') {
+                    console.log('Gender changed to:', newValue);
+
+                }
+            },
             getLocation() {
                 const options = {
                     enableHighAccuracy: true,
