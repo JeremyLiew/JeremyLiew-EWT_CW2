@@ -81,11 +81,9 @@
         });
 
         const DB = firebase.firestore();
-        const MARKERS = DB.collection('markers');
-        const SHAPES = DB.collection('shapes');
         let unsubscribe = null;
 
-        const STUDENTS = firebase.firestore().collection('user');
+        const STUDENTS = DB.collection('user');
 
         // TODO:
         const AUTH = firebase.auth();

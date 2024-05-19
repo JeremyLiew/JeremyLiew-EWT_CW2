@@ -67,9 +67,9 @@
                 </td></tr>
 
                 <tr><td>Location </td><td>{{ lat.toFixed(3) }}, {{ lng.toFixed(3) }}</td></tr>
+                <button @click="clearMarkers">Clear</button>
             </table>
         </div>
-
 
         <div id="map"></div>
 
@@ -87,8 +87,9 @@
     app.component({
         data: () => ({
             player: null,
-            meter: '',
-            gender: '',
+            circle: null,
+            meter: '5000',
+            gender: 'all',
             lat: 0,
             lng: 0,
             acc: 0,
@@ -101,11 +102,10 @@
                 const newValue = event.target.value;
 
                 if (field === 'meter') {
-                    console.log('Meter changed to:', newValue);
+                    this.circle.setRadius(parseInt(newValue));
 
                 } else if (field === 'gender') {
-                    console.log('Gender changed to:', newValue);
-
+                    this.retrieveUsers();
                 }
             },
             getLocation() {
@@ -128,7 +128,22 @@
                 this.player.setPosition(p);
                 map.panTo(p);
 
-                this.saveCoordToCloud()
+                if (!this.circle) {
+                    this.circle = new gm.Circle({
+                        map: map,
+                        center: p,
+                        radius: parseInt(this.meter) || 0,
+                        fillColor: '#AA0000',
+                        fillOpacity: 0.35,
+                        strokeColor: '#AA0000',
+                        strokeOpacity: 0.8,
+                        strokeWeight: 2,
+                    });
+                } else {
+                    this.circle.setCenter(p);
+                }
+
+                this.saveCoordToCloud();
             },
             fail(error) {
                 alert(`ERROR: (${error.code}) ${error.message}`);
@@ -140,21 +155,24 @@
                     accuracy: this.acc
                 }
 
-                STUDENTS.doc(this.$root.user.email).set(payload,{ merge: true });
-
-                console.log(this.$root.user)
+                STUDENTS.doc(this.$root.user.email).set(payload, { merge: true });
             },
 
             async retrieveUsers() {
                 try {
-                    const querySnapshot = await STUDENTS.get();
+                    this.students = [];
+                    let query = STUDENTS;
+                    if (this.gender !== 'all') {
+                        query = query.where('gender', '==', this.gender);
+                    }
+                    const querySnapshot = await query.get();
+
                     querySnapshot.forEach(doc => {
                         const student = doc.data();
                         if (doc.id !== this.$root.user.email.toLowerCase()) {
                             this.students.push(student);
                         }
                     });
-
                     this.plotMarkers();
                 } catch (error) {
                     console.error('Error retrieving users:', error);
@@ -162,6 +180,7 @@
             },
 
             plotMarkers() {
+                this.clearMarkers();
                 for (const student of this.students) {
                     const position = new gm.LatLng(student.latitude, student.longitude);
                     const marker = new gm.Marker({
@@ -176,13 +195,20 @@
                     this.markers.push(marker);
                 }
             },
+
+            clearMarkers() {
+                for (let i = 0; i < this.markers.length; i++) {
+                    this.markers[i].setVisible(false);
+                }
+                this.markers = [];
+            }
         },
 
         created() {
-             if (!this.$root.user) {
+            if (!this.$root.user) {
                 this.$router.push('/sign-in');
                 return;
-            }else{
+            } else {
                 this.$root.title = 'Welcome to Minder !';
             }
 
@@ -190,11 +216,8 @@
         },
 
         mounted() {
-            // ================================================================
-            // Google Maps
-            // ================================================================
-            map = new gm.Map($('#map')[0], {
-                center,
+            map = new gm.Map(document.getElementById('map'), {
+                center: { lat: 0, lng: 0 }, // Placeholder center
                 zoom: 16,
                 disableDefaultUI: true,
                 disableDoubleClickZoom: true,
@@ -202,11 +225,11 @@
                 scaleControl: true,
             });
 
-            const panel = $('#panel')[0];
+            const panel = document.getElementById('panel');
             panel.index = 0;
             map.controls[gm.ControlPosition.TOP_LEFT].push(panel);
 
-            if(this.$root.user){
+            if (this.$root.user) {
                 this.player = new gm.Marker({
                     map,
                     animation: gm.Animation.DROP,
@@ -216,25 +239,6 @@
                     },
                 });
             }
-
-            // gm.event.addListenerOnce(map, 'bounds_changed', e => {
-            //     const colors = ['red', 'green', 'blue'];
-
-            //     // TODO(3): Drop markers (hearts) on map within the bounds (random position)
-            //     const sw = bounds.getSouthWest();
-            //     const sp = bounds.toSpan();
-
-            //     for (const c of colors) {
-            //         const p = new gm.LatLng(
-            //             sw.lat() + sp.lat() * Math.random(),
-            //             sw.lng() + sp.lng() * Math.random()
-            //         );
-            //         addMarker(p, c);
-            //     }
-
-            //     // Call move() to calculate initial distances
-            //     this.move();
-            // });
 
             const info = new gm.InfoWindow();
 
@@ -247,33 +251,6 @@
             });
 
             this.retrieveUsers();
-
-            // const addMarker = (position, color) => {
-            //     const m = new gm.Marker({
-            //         map,
-            //         position,
-            //         icon: `image/h/${color}.png`,
-            //         distance: 0,  // Custom property
-            //         found: false, // Custom property
-            //         color         // Custom property
-            //     });
-
-            //     m.addListener('click', e => {
-            //         // TODO(5): Open info window for 3 seconds
-            //         info.setContent(`
-            //             <div id="info">
-            //                 This is the <b>${m.color}</b> heart.<br>
-            //                 It is <b>${m.distance.toFixed()}</b> meters away.
-            //             </div>
-            //         `);
-            //         info.open(map, m);
-
-            //         clearTimeout(timeout);
-            //         timeout = setTimeout(_ => info.close(), 3000);
-            //     });
-
-            //     this.markers.push(m);
-            // };
         },
 
         unmounted() {
