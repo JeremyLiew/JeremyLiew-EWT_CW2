@@ -28,6 +28,14 @@
                    required
                    maxlength="100">
 
+                   
+            <label>Gender</label>
+            <div>
+                <label><input type="radio" name="gender" value="F" v-model.trim="gender" required>Female</label>
+                <label><input type="radio" name="gender" value="M" v-model.trim="gender" required>Male</label>
+            </div>
+       
+
             <label>Photo</label>
             <input type="file" 
                    id="file" 
@@ -56,6 +64,7 @@
             email: '',
             password: '',
             name: '',
+            gender: '',
             photo: null,
         }),
 
@@ -88,7 +97,9 @@
                 this.email = '';
                 this.password = '';
                 this.name = '';
+                this.gender = '';
                 this.photo = null;
+
                 this.$refs.file.value = '';
                 this.$refs.email.focus();
             },
@@ -112,9 +123,18 @@
                             .then(snap => snap.ref.getDownloadURL())
                             .then(url => user.updateProfile({ photoURL: url }));
 
+                            const data =
+                            { 
+                                email : this.email , 
+                                gender : this.gender 
+                            };
+
+                            STUDENTS.doc(this.email).set(data);
+                        })
+                    .then(() =>{
+                        
                         this.$root.unblock();
                         this.$router.push('/');
-
                     })
                     .catch(err => {
 
