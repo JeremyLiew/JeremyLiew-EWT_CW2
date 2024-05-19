@@ -60,12 +60,16 @@
 
 <script>
     app.component({
-        data: () => ({ 
+        data: () => ({
             email: '',
             password: '',
             name: '',
             gender: '',
             photo: null,
+
+            lat: 0,
+            lng: 0,
+            acc: 0,
         }),
 
         computed: {
@@ -103,33 +107,70 @@
                 this.$refs.file.value = '';
                 this.$refs.email.focus();
             },
+            getLocation() {
+                const options = {
+                    enableHighAccuracy: true,
+                };
+
+                navigator.geolocation.getCurrentPosition(
+                    this.success,
+                    this.fail,
+                    options
+                );
+            },
+            success(position) {
+                this.lat = position.coords.latitude;
+                this.lng = position.coords.longitude;
+                this.acc = position.coords.accuracy;
+
+                const p = new gm.LatLng(this.lat, this.lng);
+                this.player.setPosition(p);
+                map.panTo(p);
+
+            },
+            fail(error) {
+                alert(`ERROR: (${error.code}) ${error.message}`);
+            },
             submit() {
                 this.$root.block();
-                
+
                 // TODO: ----------------------------------
-                
+
                 AUTH
                     .createUserWithEmailAndPassword(this.email, this.password)
                     .then(credential => {
 
                         const user = this.$root.user;
+                        let photoUrl;
 
                         user.updateProfile({ displayName: this.name });
 
-                        STORAGE
-                            .ref('photos')
-                            .child(user.uid + '.webp')
-                            .put(this.photo)
-                            .then(snap => snap.ref.getDownloadURL())
-                            .then(url => user.updateProfile({ photoURL: url }));
+                        // Upload photo and get the download URL
+                        if (this.photo) {
+                            const photoRef = STORAGE.ref('photos').child(user.uid + '.webp');
+                            photoUrlPromise = photoRef.put(this.photo).then(snap => snap.ref.getDownloadURL());
+                        } else {
+                            photoUrlPromise = Promise.resolve('image/photo.png'); // Default photo URL
+                        }
 
-                            const data =
-                            {
-                                gender : this.gender
+                        // Wait for the photo URL promise to resolve
+                        return photoUrlPromise.then(photoURL => {
+                            // Update user profile with photo URL
+                            user.updateProfile({ photoURL });
+
+                            // Prepare data for Firestore
+                            const data = {
+                                gender: this.gender,
+                                latitude: this.lat,
+                                longitude: this.lng,
+                                accuracy: this.acc,
+                                photo: photoURL,
                             };
 
-                            STUDENTS.doc(this.email.toLowerCase()).set(data);
-                        })
+                            // Save data to Firestore
+                            return STUDENTS.doc(this.email.toLowerCase()).set(data);
+                        });
+                    })
                     .then(() =>{
 
                         this.$root.unblock();
@@ -146,9 +187,18 @@
             },
         },
 
+
         created() {
             this.$root.title = 'Firebase Authentication';
             document.title = 'Firebase Authentication : Register';
         },
+
+        mounted(){
+            navigator.permissions.query({ name: 'geolocation' }).then(result => {
+                if (result.state == 'granted') {
+                    this.getLocation();
+                }
+            });
+        }
     });
 </script>
