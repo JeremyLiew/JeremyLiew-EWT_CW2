@@ -1,11 +1,22 @@
 <style>
     :root {
         display: grid;
-        grid: auto / 200px 1fr;
+        grid: 'location map'auto 
+              'chat map' 1fr
+                / 200px 1fr;
         gap: 40px;
     }
 
+    #location{
+        grid-area: location;
+    }
+
+    #chat{
+        grid-area: chat;
+    }
+
     #map {
+        grid-area: map;
         border: 1px solid #333;
     }
 
@@ -43,7 +54,7 @@
 
 <template>
     <main>
-        <div>
+        <div id="location">
             <table class="table">
                 <tr><td>Meter</td><td>
                     <select v-model="meter" @change="change($event, 'meter')">
@@ -69,7 +80,13 @@
                 <tr><td>Location </td><td>{{ lat.toFixed(3) }}, {{ lng.toFixed(3) }}</td></tr>
             </table>
         </div>
+        
+        <div id="chat">
+            <h1>Chat with other</h1>
+            <table>
 
+            </table>
+        </div>
 
         <div id="map"></div>
 
@@ -79,6 +96,7 @@
                 </table>
             </div>
         </template>
+
     </main>
 </template>
 
@@ -94,6 +112,14 @@
             acc: 0,
             markers: [],
             students: [],
+            //chat data
+            message: '',
+            documentFile: '',
+            youtubeLink: '',
+            image: '',
+            emoji: '',
+            dateAndTime: '',
+            mp3: '',
         }),
 
         methods: {
