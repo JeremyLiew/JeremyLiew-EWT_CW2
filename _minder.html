@@ -1,7 +1,7 @@
 <style>
     :root {
         display: grid;
-        grid: 'location map'auto 
+        grid: 'location map'auto
               'chat map' 1fr
                 / 200px 1fr;
         gap: 40px;
@@ -124,6 +124,12 @@
                 <template v-else>
                     <button @click="findNearbyCafes" title="Display Nearby Cafes"><img src="image/coffee.png" alt="Find Cafes"></button>
                 </template>
+                <template v-if="showRestaurants">
+                    <button @click="clearRestaurantMarkers(); showRestaurants = false" title="Remove Restaurants"><img src="image/remove.png" alt="Remove Restaurants"></button>
+                </template>
+                <template v-else>
+                    <button @click="findNearbyRestaurants" title="Display Nearby Restaurants"><img src="image/restaurant.png" alt="Find Restaurants"></button>
+                </template>
             </div>
             </div>
         </template>
@@ -143,8 +149,8 @@
             lng: 0,
             acc: 0,
             markers: [],
-            cafeMarkers: [],
             students: [],
+
             //chat data
             message: '',
             documentFile: '',
@@ -153,10 +159,17 @@
             emoji: '',
             dateAndTime: '',
             mp3: '',
+
             nearbyStudents: [],
+
             cafes: [],
+            cafeMarkers: [],
             placesService: null,
             showCafes : false,
+
+            restaurant: [],
+            restaurantMarkers: [],
+            showRestaurants: false,
         }),
 
         methods: {
@@ -200,6 +213,7 @@
                         this.placesService.getDetails({ placeId: cafe.place_id }, (place, status) => {
                             if (status === google.maps.places.PlacesServiceStatus.OK) {
                                 const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
+                                const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
                                 info.setContent(`
                                     <div id="info" style="text-align: center;">
                                         <div style="position: relative; display: inline-block;">
@@ -216,6 +230,9 @@
                                             ${place.opening_hours ? 'Open now: ' + (place.opening_hours.isOpen() ? '<span style="color:green">Yes</span>' : 
                                             '<span style="color:red">No</span>') : '-'}
                                         </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            ${rating} <img style="width:12px" src="image/star.png">
+                                        </div>
                                         <div style="margin-top: 10px; font-size: 12px; color: gray;">
                                             ${hours}
                                         </div>
@@ -227,6 +244,75 @@
                     });
 
                     this.cafeMarkers.push(marker);
+                }
+            },
+            findNearbyRestaurants() {
+                this.showRestaurants = true;
+                const location = new gm.LatLng(this.lat, this.lng);
+                const request = {
+                    location: location,
+                    radius: this.meter,
+                    type: ['restaurant']
+                };
+
+                this.placesService.nearbySearch(request, (results, status) => {
+                    if (status === google.maps.places.PlacesServiceStatus.OK) {
+                        this.restaurants = results;
+                        this.plotRestaurantMarkers();
+                    } else {
+                        console.error('PlacesService failed due to: ' + status);
+                    }
+                });
+            },
+            plotRestaurantMarkers() {
+                this.clearRestaurantMarkers();
+                for (const restaurant of this.restaurants) {
+                    const position = new gm.LatLng(restaurant.geometry.location.lat(), restaurant.geometry.location.lng());
+                    const marker = new gm.Marker({
+                        map: map,
+                        position: position,
+                        icon: {
+                            url: 'image/restaurant.png',
+                            scaledSize: new google.maps.Size(34, 34),
+                        },
+                    });
+
+                    const info = new gm.InfoWindow();
+
+                    marker.addListener('click', () => {
+                        this.placesService.getDetails({ placeId: restaurant.place_id }, (place, status) => {
+                            if (status === google.maps.places.PlacesServiceStatus.OK) {
+                                const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
+                                const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
+                                info.setContent(`
+                                    <div id="info" style="text-align: center;">
+                                        <div style="position: relative; display: inline-block;">
+                                            <img src="${place.photos ? place.photos[0].getUrl({ maxWidth: 200, maxHeight: 200 }) : 'image/no-image.png'}"
+                                                style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #FF0000; display: block; margin: 0 auto;">
+                                        </div>
+                                        <div style="margin-top: 10px; font-size: 14px;">
+                                            <b>${place.name}</b>
+                                        </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            ${place.vicinity}
+                                        </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            ${place.opening_hours ? 'Open now: ' + (place.opening_hours.isOpen() ? '<span style="color:green">Yes</span>' : '<span style="color:red">No</span>') : '-'}
+                                        </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            ${rating} <img style="width:12px" src="image/star.png">
+                                        </div>
+                                        <div style="margin-top: 10px; font-size: 12px; color: gray;">
+                                            ${hours}
+                                        </div>
+                                    </div>
+                                `);
+                                info.open(map, marker);
+                            }
+                        });
+                    });
+
+                    this.restaurantMarkers.push(marker);
                 }
             },
             panToCenter() {
@@ -387,7 +473,13 @@
                     this.cafeMarkers[i].setVisible(false);
                 }
                 this.cafeMarkers = [];
-            }
+            },
+            clearRestaurantMarkers() {
+                for (let i = 0; i < this.restaurantMarkers.length; i++) {
+                    this.restaurantMarkers[i].setVisible(false);
+                }
+                this.restaurantMarkers = [];
+            },
         },
 
         created() {
