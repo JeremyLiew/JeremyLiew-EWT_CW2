@@ -106,7 +106,6 @@
                 <tr v-for="student in nearbyStudents" :key="student.id">
                     <td class="student-name">{{ student.name }}</td>
                     <td><svg class="chat-icon" @click="chat" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>Chat Now !</title><path d="M12,3C17.5,3 22,6.58 22,11C22,15.42 17.5,19 12,19C10.76,19 9.57,18.82 8.47,18.5C5.55,21 2,21 2,21C4.33,18.67 4.7,17.1 4.75,16.5C3.05,15.07 2,13.13 2,11C2,6.58 6.5,3 12,3M17,12V10H15V12H17M13,12V10H11V12H13M9,12V10H7V12H9Z" /></svg></td>
-                    <!-- Add more table cells for additional student data -->
                 </tr>
                 <tr v-if="nearbyStudents.length == 0">
                     <td colspan="2" class="no-users">No nearby users found</td>
@@ -118,7 +117,14 @@
 
         <template>
             <div id="panel">
-                <button @click="panToCenter"><img src="image/panToCenter.png" alt=""></button>
+                <button @click="panToCenter" title="Pan to Center"><img src="image/panToCenter.png" alt="Pan to Center"></button>
+                <template v-if="showCafes">
+                    <button @click="clearCafeMarkers(); showCafes = false" title="Remove Cafes"><img src="image/remove.png" alt="Remove Cafes"></button>
+                </template>
+                <template v-else>
+                    <button @click="findNearbyCafes" title="Display Nearby Cafes"><img src="image/coffee.png" alt="Find Cafes"></button>
+                </template>
+            </div>
             </div>
         </template>
 
@@ -137,6 +143,7 @@
             lng: 0,
             acc: 0,
             markers: [],
+            cafeMarkers: [],
             students: [],
             //chat data
             message: '',
@@ -147,11 +154,80 @@
             dateAndTime: '',
             mp3: '',
             nearbyStudents: [],
+            cafes: [],
+            placesService: null,
+            showCafes : false,
         }),
 
         methods: {
             chat(){
                 alert("lets chat")
+            },
+            findNearbyCafes() {
+                this.showCafes = true;
+                const location = new gm.LatLng(this.lat, this.lng);
+                const request = {
+                    location: location,
+                    radius: this.meter,
+                    type: ['cafe']
+                };
+
+                this.placesService.nearbySearch(request, (results, status) => {
+                    if (status === google.maps.places.PlacesServiceStatus.OK) {
+                        this.cafes = results;
+                        this.plotCafeMarkers();
+                    } else {
+                        console.error('PlacesService failed due to: ' + status);
+                    }
+                });
+            },
+            plotCafeMarkers() {
+                this.clearCafeMarkers();
+                for (const cafe of this.cafes) {
+                    const position = new gm.LatLng(cafe.geometry.location.lat(), cafe.geometry.location.lng());
+                    const marker = new gm.Marker({
+                        map: map,
+                        position: position,
+                        icon: {
+                            url: 'image/coffee.png',
+                            scaledSize: new google.maps.Size(34, 34),
+                        },
+                    });
+
+                    const info = new gm.InfoWindow();
+
+                    marker.addListener('click', () => {
+                        this.placesService.getDetails({ placeId: cafe.place_id }, (place, status) => {
+                            if (status === google.maps.places.PlacesServiceStatus.OK) {
+                                const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
+                                info.setContent(`
+                                    <div id="info" style="text-align: center;">
+                                        <div style="position: relative; display: inline-block;">
+                                            <img src="${place.photos ? place.photos[0].getUrl({ maxWidth: 200, maxHeight: 200 }) : 'image/no-image.png'}"
+                                                style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #FF0000; display: block; margin: 0 auto;">
+                                        </div>
+                                        <div style="margin-top: 10px; font-size: 14px;">
+                                            <b>${place.name}</b>
+                                        </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            ${place.vicinity}
+                                        </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            ${place.opening_hours ? 'Open now: ' + (place.opening_hours.isOpen() ? '<span style="color:green">Yes</span>' : 
+                                            '<span style="color:red">No</span>') : '-'}
+                                        </div>
+                                        <div style="margin-top: 10px; font-size: 12px; color: gray;">
+                                            ${hours}
+                                        </div>
+                                    </div>
+                                `);
+                                info.open(map, marker);
+                            }
+                        });
+                    });
+
+                    this.cafeMarkers.push(marker);
+                }
             },
             panToCenter() {
                 const center = new gm.LatLng(this.lat, this.lng);
@@ -251,7 +327,7 @@
             },
 
             plotMarkers() {
-                this.clearMarkers();
+                this.clearUserMarkers();
                 for (const student of this.students) {
                     const position = new gm.LatLng(student.latitude, student.longitude);
 
@@ -300,11 +376,17 @@
                 }
             },
 
-            clearMarkers() {
+            clearUserMarkers() {
                 for (let i = 0; i < this.markers.length; i++) {
                     this.markers[i].setVisible(false);
                 }
                 this.markers = [];
+            },
+            clearCafeMarkers() {
+                for (let i = 0; i < this.cafeMarkers.length; i++) {
+                    this.cafeMarkers[i].setVisible(false);
+                }
+                this.cafeMarkers = [];
             }
         },
 
@@ -328,6 +410,8 @@
                 clickableIcons: false,
                 scaleControl: true,
             });
+
+            this.placesService = new gm.places.PlacesService(map);
 
             const panel = document.getElementById('panel');
             panel.index = 0;
