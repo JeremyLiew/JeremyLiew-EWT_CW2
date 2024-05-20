@@ -130,6 +130,13 @@
                 <template v-else>
                     <button @click="findNearbyRestaurants" title="Display Nearby Restaurants"><img src="image/restaurant.png" alt="Find Restaurants"></button>
                 </template>
+
+                <template v-if="enableShowRoute">
+                    <button @click="enableShowRoute = false" title="Disable Show Route"><img src="image/remove.png" alt="Disable Show Route"></button>
+                </template>
+                <template v-else>
+                    <button @click="enableShowRoute= true" title="Enable Show Route"><img src="image/route.png" alt="Enable Show Route"></button>
+                </template>
             </div>
             </div>
         </template>
@@ -170,11 +177,70 @@
             restaurant: [],
             restaurantMarkers: [],
             showRestaurants: false,
+
+            directionsService: null,
+            directionsRenderer: null,
+            routeToCafe: false,
+            routeToRestaurant: false,
+            routeToUser: false,
+
+            enableShowRoute: false,
         }),
 
         methods: {
             chat(){
                 alert("lets chat")
+            },
+            calculateAndDisplayRoute(destination, type) {
+                const request = {
+                    origin: new google.maps.LatLng(this.lat, this.lng),
+                    destination: destination,
+                    travelMode: google.maps.TravelMode.DRIVING,
+                };
+
+                this.directionsService.route(request, (result, status) => {
+                    if (status == google.maps.DirectionsStatus.OK) {
+                        this.directionsRenderer.setDirections(result);
+                    } else {
+                        console.error('Directions request failed due to ' + status);
+                    }
+                });
+            },
+
+            displayRouteToUser(user) {
+                try {
+                    const otherUserLocation = new gm.LatLng(user.latitude, user.longitude);
+
+                    const request = {
+                        origin: new google.maps.LatLng(this.lat, this.lng),
+                        destination: otherUserLocation,
+                        travelMode: google.maps.TravelMode.DRIVING,
+                    };
+
+                    this.directionsService.route(request, (result, status) => {
+                        if (status == google.maps.DirectionsStatus.OK) {
+                            this.directionsRenderer.setDirections(result);
+                        } else {
+                            console.error('Directions request failed due to ' + status);
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error displaying route:', error);
+                }
+            },
+
+            toggleRouteToCafe() {
+                this.routeToCafe = !this.routeToCafe;
+                if (this.routeToCafe) {
+                    this.routeToRestaurant = false;
+                }
+            },
+
+            toggleRouteToRestaurant() {
+                this.routeToRestaurant = !this.routeToRestaurant;
+                if (this.routeToRestaurant) {
+                    this.routeToCafe = false;
+                }
             },
             findNearbyCafes() {
                 this.showCafes = true;
@@ -210,7 +276,8 @@
                     const info = new gm.InfoWindow();
 
                     marker.addListener('click', () => {
-                        this.placesService.getDetails({ placeId: cafe.place_id }, (place, status) => {
+                        if(!this.enableShowRoute){
+                            this.placesService.getDetails({ placeId: cafe.place_id }, (place, status) => {
                             if (status === google.maps.places.PlacesServiceStatus.OK) {
                                 const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
                                 const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
@@ -250,6 +317,19 @@
                                 info.open(map, marker);
                             }
                         });
+                        }
+                    });
+
+                    marker.addListener('click', () => {
+                        if(this.enableShowRoute){
+                            if(this.routeToCafe){
+                                this.routeToCafe = false;
+                                this.directionsRenderer.setDirections({ routes: [] });
+                            } else {
+                                this.routeToCafe = true;
+                                this.calculateAndDisplayRoute(position, 'cafe');
+                            }
+                        }
                     });
 
                     this.cafeMarkers.push(marker);
@@ -290,7 +370,8 @@
                     const info = new gm.InfoWindow();
 
                     marker.addListener('click', () => {
-                        this.placesService.getDetails({ placeId: restaurant.place_id }, (place, status) => {
+                        if(!this.enableShowRoute){
+                            this.placesService.getDetails({ placeId: restaurant.place_id }, (place, status) => {
                             if (status === google.maps.places.PlacesServiceStatus.OK) {
                                 const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
                                 const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
@@ -330,6 +411,19 @@
                                 info.open(map, marker);
                             }
                         });
+                        }
+                    });
+
+                    marker.addListener('click', () => {
+                        if(this.enableShowRoute){
+                            if(this.routeToRestaurant){
+                                this.routeToRestaurant = false;
+                                this.directionsRenderer.setDirections({ routes: [] });
+                            } else {
+                                this.routeToRestaurant = true;
+                                this.calculateAndDisplayRoute(position, 'restaurant');
+                            }
+                        }
                     });
 
                     this.restaurantMarkers.push(marker);
@@ -409,24 +503,27 @@
                     }
                     const querySnapshot = await query.get();
 
-                    querySnapshot.forEach(doc => {
-                        const student = doc.data();
-                        if (doc.id !== this.$root.user.email.toLowerCase()) {
+                    if(this.player){
+                        const playerPosition = this.player.getPosition();
+                        querySnapshot.forEach(doc => {
+                            const student = doc.data();
+                            if (doc.id !== this.$root.user.email.toLowerCase()) {
+                                const studentPosition = new gm.LatLng(student.latitude, student.longitude);
+                                const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, playerPosition);
+                                student.distance = distance
+                                this.students.push(student);
+                            }
+                        });
+
+                        this.nearbyStudents = this.students.filter(student => {
                             const studentPosition = new gm.LatLng(student.latitude, student.longitude);
-                            const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, this.player.getPosition());
-                            student.distance = distance
-                            this.students.push(student);
-                        }
-                    });
+                            const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, playerPosition);
+                            // Convert distance from meters to kilometers and check if it's within the specified radius
+                            return distance / 1000 <= parseInt(this.meter) / 1000;
+                        });
 
-                    this.nearbyStudents = this.students.filter(student => {
-                        const studentPosition = new gm.LatLng(student.latitude, student.longitude);
-                        const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, this.player.getPosition());
-                        // Convert distance from meters to kilometers and check if it's within the specified radius
-                        return distance / 1000 <= parseInt(this.meter) / 1000;
-                    });
-
-                    this.plotMarkers();
+                        this.plotMarkers();
+                    }
                 } catch (error) {
                     console.error('Error retrieving users:', error);
                 }
@@ -451,32 +548,46 @@
                     let timeout = null;
 
                     marker.addListener('click', e =>{
-                        info.setContent(`
-                        <div id="info" style="text-align: center;">
-                                <div style="position: relative; display: inline-block;">
-                                    <img src="${student.photo}"
-                                        style="
-                                            width: 50px;
-                                            height: 50px;
-                                            border-radius: 50%;
-                                            border: 2px solid #FF0000;
-                                            display: block;
-                                            margin: 0 auto;
-                                        ">
+                        if(!this.enableShowRoute){
+                            info.setContent(`
+                            <div id="info" style="text-align: center;">
+                                    <div style="position: relative; display: inline-block;">
+                                        <img src="${student.photo}"
+                                            style="
+                                                width: 50px;
+                                                height: 50px;
+                                                border-radius: 50%;
+                                                border: 2px solid #FF0000;
+                                                display: block;
+                                                margin: 0 auto;
+                                            ">
+                                    </div>
+                                    <div style="margin-top: 10px; font-size: 14px;">
+                                        <b>"${student.caption}"</b>
+                                    </div>
+                                    <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                        I am <b>${student.distance.toFixed(2)}</b> meters away from you.
+                                    </div>
                                 </div>
-                                <div style="margin-top: 10px; font-size: 14px;">
-                                    <b>"${student.caption}"</b>
-                                </div>
-                                <div style="margin-top: 5px; font-size: 12px; color: gray;">
-                                    I am <b>${student.distance.toFixed(2)}</b> meters away from you.
-                                </div>
-                            </div>
-                        `);
-                        info.open(map, marker);
+                            `);
+                            info.open(map, marker);
 
-                        clearTimeout(timeout);
-                        timeout = setTimeout(_ => info.close(), 3000);
-                    })
+                            clearTimeout(timeout);
+                            timeout = setTimeout(_ => info.close(), 3000);
+                        }
+                    });
+
+                    marker.addListener('click', () => {
+                        if(this.enableShowRoute){
+                            if(this.routeToUser){
+                                this.routeToUser = false;
+                                this.directionsRenderer.setDirections({ routes: [] });
+                            } else {
+                                this.routeToUser = true;
+                                this.displayRouteToUser(student)
+                            }
+                        }
+                    });
 
                     this.markers.push(marker);
                 }
@@ -545,6 +656,12 @@
                     this.getLocation();
                 }
             });
+
+            this.directionsService = new google.maps.DirectionsService();
+            this.directionsRenderer = new google.maps.DirectionsRenderer({
+                suppressMarkers: true
+            });
+            this.directionsRenderer.setMap(map);
 
             this.retrieveUsers();
         },
