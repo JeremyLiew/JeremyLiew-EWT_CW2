@@ -21,7 +21,7 @@ body {
 
 header {
     padding: 10px 50px;
-    background: #ccc;
+    background: #A040E4;
     display: flex;
     gap: 5px;
     align-items: center;
@@ -29,7 +29,7 @@ header {
 
 header h1 {
     margin: 0;
-    background: url(../image/favicon.png) no-repeat left center / 32px 32px;
+    background: url(../image/love.png) no-repeat left center / 32px 32px;
     padding-left: 40px;
     flex: 1 1 auto;
 }

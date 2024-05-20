@@ -1,4 +1,20 @@
 <style>
+    .registration-form {
+        text-align: center;
+        margin: 50px auto;
+        padding: 20px;
+        max-width: 400px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        border: 1px solid black;
+    }
+
+    .form {
+        margin-top: 20px;
+        text-align: left;
+    }
+
     .get-signin {
         text-align: center;
         margin-top: 20px;
@@ -19,63 +35,59 @@
 </style>
 <template>
     <main>
-        <h1>Register</h1>
-        <form class="form" 
-              @submit.prevent="submit"
-              @input="$event.target.setCustomValidity('')">
-
-            <label>Email</label>
-            <input v-model.trim="email"
-                   type="email"
-                   required
-                   maxlength="100"
-                   ref="email"
-                   v-focus>
-
-            <label>Password</label>
-            <input v-model.trim="password"
-                   type="password"
-                   required
-                   maxlength="100"
-                   ref="password">
-
-            <label>Name</label>
-            <input v-model.trim="name"
-                   type="text"
-                   required
-                   maxlength="100">
-            <label>Gender</label>
-            <div>
-                <label><input type="radio" name="gender" value="F" v-model.trim="gender" required>Female</label>
-                <label><input type="radio" name="gender" value="M" v-model.trim="gender" required>Male</label>
+        <div class="registration-form">
+            <h1>Register</h1>
+            <form class="form"
+                  @submit.prevent="submit"
+                  @input="$event.target.setCustomValidity('')">
+                <label>Email</label>
+                <input v-model.trim="email"
+                       type="email"
+                       required
+                       maxlength="100"
+                       ref="email"
+                       v-focus>
+                <label>Password</label>
+                <input v-model.trim="password"
+                       type="password"
+                       required
+                       maxlength="100"
+                       ref="password">
+                <label>Name</label>
+                <input v-model.trim="name"
+                       type="text"
+                       required
+                       maxlength="100">
+                <label>Gender</label>
+                <div>
+                    <label><input type="radio" name="gender" value="F" v-model.trim="gender" required>Female</label>
+                    <label><input type="radio" name="gender" value="M" v-model.trim="gender" required>Male</label>
+                </div>
+                <label>Photo</label>
+                <input type="file"
+                       id="file"
+                       accept="image/*"
+                       required
+                       @change="change"
+                       ref="file">
+                <br>
+                <label for="file">
+                    <img class="photo" :src="src">
+                </label>
+                <label>Caption</label>
+                <input v-model.trim="caption"
+                       type="text"
+                       required
+                       maxlength="100">
+                <section>
+                    <button>Submit</button>
+                    <button @click.prevent="reset">Reset</button>
+                    <button @click.prevent="$router.push('/')">Cancel</button>
+                </section>
+            </form>
+            <div class="get-signin">
+                <p class="get-signin-text">Already have an account? <a href="#/sign-in">Sign in now</a></p>
             </div>
-
-            <label>Photo</label>
-            <input type="file" 
-                   id="file" 
-                   accept="image/*"
-                   required 
-                   @change="change"
-                   ref="file">
-            <br>
-            <label for="file">
-                <img class="photo" :src="src">
-            </label>
-
-            <label>Caption</label>
-            <input v-model.trim="caption"
-                   type="text"
-                   required
-                   maxlength="100">
-
-            <section>
-                <button>Submit</button>
-                <button @click.prevent="reset">Reset</button>
-                <button @click.prevent="$router.push('/')">Cancel</button>
-            </section>
-        </form>
-        <div class="get-signin">
-            <p class="get-signin-text">Already have an account? <a href="#/sign-in">Sign in now</a></p>
         </div>
     </main>
 </template>
@@ -215,8 +227,8 @@
 
 
         created() {
-            this.$root.title = 'Firebase Authentication';
-            document.title = 'Firebase Authentication : Register';
+            this.$root.title = 'Minder Authentication';
+            document.title = 'Minder : Register';
         },
 
         mounted(){

@@ -1,32 +1,42 @@
+<style>
+    .signin-form {
+        text-align: center;
+        margin: 50px auto;
+        padding: 20px;
+        max-width: 400px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        border: 1px solid black;
+    }
+</style>
 <template>
     <main>
-        <h1>Sign In</h1>
-
-        <form class="form"
-              @submit.prevent="submit"
-              @input="$event.target.setCustomValidity('')">
-
-            <label>Email</label>
-            <input v-model.trim="email"
-                   type="email"
-                   required
-                   maxlength="100"
-                   ref="email"
-                   v-focus>
-
-            <label>Password</label>
-            <input v-model.trim="password"
-                   type="password"
-                   required
-                   maxlength="100"
-                   ref="password">
-
-            <section>
-                <button>Submit</button>
-                <button @click.prevent="reset">Reset</button>
-                <button @click.prevent="$router.push('/')">Cancel</button>
-            </section>
-        </form>
+        <div class="signin-form">
+            <h1>Sign In</h1>
+            <form class="form"
+                  @submit.prevent="submit"
+                  @input="$event.target.setCustomValidity('')">
+                <label>Email</label>
+                <input v-model.trim="email"
+                       type="email"
+                       required
+                       maxlength="100"
+                       ref="email"
+                       v-focus>
+                <label>Password</label>
+                <input v-model.trim="password"
+                       type="password"
+                       required
+                       maxlength="100"
+                       ref="password">
+                <section>
+                    <button>Submit</button>
+                    <button @click.prevent="reset">Reset</button>
+                    <button @click.prevent="$router.push('/')">Cancel</button>
+                </section>
+            </form>
+        </div>
     </main>
 </template>
 
@@ -74,8 +84,8 @@
         },
 
         created() {
-            this.$root.title = 'Firebase Authentication';
-            document.title = 'Firebase Authentication : Sign In';
+            this.$root.title = 'Minder Authentication';
+            document.title = 'Minder : Sign In';
         },
     });
 </script>
