@@ -214,6 +214,13 @@
                             if (status === google.maps.places.PlacesServiceStatus.OK) {
                                 const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
                                 const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
+
+                                const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                                    new google.maps.LatLng(this.lat, this.lng),
+                                    position
+                                );
+                                const distanceKm = (distance / 1000).toFixed(2);
+
                                 info.setContent(`
                                     <div id="info" style="text-align: center;">
                                         <div style="position: relative; display: inline-block;">
@@ -227,11 +234,13 @@
                                             ${place.vicinity}
                                         </div>
                                         <div style="margin-top: 5px; font-size: 12px; color: gray;">
-                                            ${place.opening_hours ? 'Open now: ' + (place.opening_hours.isOpen() ? '<span style="color:green">Yes</span>' : 
-                                            '<span style="color:red">No</span>') : '-'}
+                                            ${place.opening_hours ? 'Open now: ' + (place.opening_hours.isOpen() ? '<span style="color:green">Yes</span>' : '<span style="color:red">No</span>') : '-'}
                                         </div>
                                         <div style="margin-top: 5px; font-size: 12px; color: gray;">
                                             ${rating} <img style="width:12px" src="image/star.png">
+                                        </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            Distance: ${distanceKm} km
                                         </div>
                                         <div style="margin-top: 10px; font-size: 12px; color: gray;">
                                             ${hours}
@@ -246,6 +255,7 @@
                     this.cafeMarkers.push(marker);
                 }
             },
+
             findNearbyRestaurants() {
                 this.showRestaurants = true;
                 const location = new gm.LatLng(this.lat, this.lng);
@@ -284,6 +294,13 @@
                             if (status === google.maps.places.PlacesServiceStatus.OK) {
                                 const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
                                 const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
+
+                                const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                                    new google.maps.LatLng(this.lat, this.lng),
+                                    position
+                                );
+                                const distanceKm = (distance / 1000).toFixed(2);
+
                                 info.setContent(`
                                     <div id="info" style="text-align: center;">
                                         <div style="position: relative; display: inline-block;">
@@ -301,6 +318,9 @@
                                         </div>
                                         <div style="margin-top: 5px; font-size: 12px; color: gray;">
                                             ${rating} <img style="width:12px" src="image/star.png">
+                                        </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            Distance: ${distanceKm} km
                                         </div>
                                         <div style="margin-top: 10px; font-size: 12px; color: gray;">
                                             ${hours}
