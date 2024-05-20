@@ -1,75 +1,82 @@
 <style>
-    :root {
-        display: grid;
-        grid: auto / 200px 1fr;
-        gap: 10px;
+    .heading {
+        font-size: 10vh;
     }
 
-    table {
-        margin-bottom: 10px;
+    .hand-wave {
+        width: 20px;
+        height: 20px;
     }
 
-    td:last-child {
-        width: 100%;
+    .caption {
+        display: flex;
     }
 
-    #map {
-        border: 1px solid #333;
+    .caption-description {
+        align-content: center;
+        margin-left: 10px;
+        font-size: 12px;
+        color: grey;
+    }
+
+    .cover-img {
+        text-align: center;
+        margin-top: 50px;
+    }
+
+    .cover-img-title {
+        font-size: 8vh;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 1s ease;
+    }
+
+    .cover-img-title.show {
+        opacity: 1;
+    }
+
+    .get-started {
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .get-started-text {
+        font-size: 10px;
+    }
+
+    .get-started-text a {
+        color: blue;
+        text-decoration: none;
+    }
+
+    .get-started-text a:hover {
+        text-decoration: underline;
     }
 </style>
 
 <template>
     <main>
-        <div>
-            <table class="table">
-                <tr><td>Latitude </td><td>{{ lat.toFixed(6) }}</td></tr>
-                <tr><td>Longitude</td><td>{{ lng.toFixed(6) }}</td></tr>
-                <tr><td>Accuracy </td><td>{{ acc.toFixed(3) }} m</td></tr>
-            </table>
-            <button @click="getLocation">Get Location</button>
+        <div class="container">
+            <div class="heading">Hello, <br>Looking For A Match ?</div>
+            <div class="caption">
+                <div><img class="hand-wave" src="image/hand-wave.png" alt=""></div>
+                <div class="caption-description">Introduce yourself to the world ! Tell the world what you do - and why should they care.</div>
+            </div>
+            <div class="cover-img"><img src="image/couple.png" alt=""></div>
+            <div class="cover-img-title">Minder</div>
+            <div class="get-started">
+                <p class="get-started-text">Get started now by <a href="#/register">signing up</a></p>
+            </div>
         </div>
-        <div id="map"></div>
     </main>
 </template>
 
 <script>
     app.component({
         data: () => ({
-            lat: 0,
-            lng: 0,
-            acc: 0,
-            marker: null,
         }),
 
         methods: {
-            getLocation() {
-                // TODO(1): Get current position
-                // Options: - enableHighAccuracy: false (default), or true
-                //          - timeout: Infinity (default), or number (ms)
-                //          - maximumAge: 0 (default), or number (ms)
-                const options = {
-                    enableHighAccuracy: true,
-                };
-
-                navigator.geolocation.getCurrentPosition(
-                    this.success,
-                    this.fail,
-                    options
-                );
-            },
-            success(position) {
-                // TODO(2): Update output, marker and map
-                this.lat = position.coords.latitude;
-                this.lng = position.coords.longitude;
-                this.acc = position.coords.accuracy;
-
-                const p = new gm.LatLng(this.lat, this.lng);
-                this.marker.setPosition(p);
-                map.panTo(p);
-            },
-            fail(error) {
-                alert(`ERROR: (${error.code}) ${error.message}`);
-            },
         },
 
         created() {
@@ -77,38 +84,12 @@
         },
 
         mounted() {
-            // ================================================================
-            // Google Maps
-            // ================================================================
-
-            map = new gm.Map($('#map')[0], {
-                center,
-                zoom: 16,
-                disableDefaultUI: true,
-                disableDoubleClickZoom: true,
-                clickableIcons: false,
-                scaleControl: true,
-            });
-
-            this.marker = new gm.Marker({
-                map,
-                animation: gm.Animation.DROP,
-            });
-
-            // ================================================================
-
-            // TODO(3): Permissions API 
-            //          result.state = granted, prompt, denied
-            navigator.permissions.query({ name: 'geolocation' }).then(result => {
-                if (result.state == 'granted') {
-                    this.getLocation();
-                }
-            });
-
+            setTimeout(() => {
+                document.querySelector('.cover-img-title').classList.add('show');
+            }, 1000);
         },
 
         unmounted() {
-            map = null;
         },
     });
 </script>

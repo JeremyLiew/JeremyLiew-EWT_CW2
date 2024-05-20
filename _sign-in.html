@@ -2,8 +2,8 @@
     <main>
         <h1>Sign In</h1>
 
-        <form class="form" 
-              @submit.prevent="submit" 
+        <form class="form"
+              @submit.prevent="submit"
               @input="$event.target.setCustomValidity('')">
 
             <label>Email</label>
@@ -50,8 +50,6 @@
                 // Delete Account ---> #/sign-in?page=/delete-account
                 const page = this.$route.query.page;
 
-                // TODO: ----------------------------------
-
                 AUTH
                     .signInWithEmailAndPassword(this.email, this.password)
                     .then(credential => {
@@ -70,7 +68,6 @@
                         handleError(err, this.$refs.email, this.$refs.password);
 
                     });
-                
 
                 // ----------------------------------------
             },
