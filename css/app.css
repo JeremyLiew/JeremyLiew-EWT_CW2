@@ -255,3 +255,10 @@ tr:hover td:last-child .photo {
 #loader::backdrop {
     background: #0006;
 }
+
+* {
+    font-family: "Poetsen One", sans-serif;
+        font-weight: 400;
+        font-style: normal;
+
+}

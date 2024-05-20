@@ -49,6 +49,11 @@
                 <img class="photo" :src="src">
             </label>
 
+            <input v-model.trim="caption"
+                   type="text"
+                   required
+                   maxlength="100">
+
             <section>
                 <button>Submit</button>
                 <button @click.prevent="reset">Reset</button>
@@ -66,6 +71,7 @@
             name: '',
             gender: '',
             photo: null,
+            caption: '',
 
             lat: 0,
             lng: 0,
@@ -103,6 +109,7 @@
                 this.name = '';
                 this.gender = '';
                 this.photo = null;
+                this.caption = '';
 
                 this.$refs.file.value = '';
                 this.$refs.email.focus();
@@ -166,6 +173,7 @@
                                 longitude: this.lng,
                                 accuracy: this.acc,
                                 photo: photoURL,
+                                caption: this.caption,
                             };
 
                             // Save data to Firestore

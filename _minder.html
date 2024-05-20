@@ -41,6 +41,18 @@
         margin-bottom: 10px;
     }
 
+    .table-user tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+
+    td.student-name {
+        width: 70%;
+    }
+
+    td button {
+        width: 100%;
+    }
+
     td:last-child {
         width: 100%;
     }
@@ -49,6 +61,12 @@
         font-size: 16px;
         font-family: 'Roboto', sans-serif;
         font-weight: normal;
+    }
+
+    .chat-icon {
+        cursor: pointer;
+        width: 100%;
+        height: 20px;
     }
 </style>
 
@@ -78,21 +96,21 @@
                 </td></tr>
 
                 <tr><td>Location </td><td>{{ lat.toFixed(3) }}, {{ lng.toFixed(3) }}</td></tr>
+            </table>
+        </div>
 
+        <div id="chat">
+            <h1>Chat with others</h1>
+            <table class="table table-users">
+                <tr><td colspan="2" style="text-align: center;">Nearby users</td></tr>
                 <tr v-for="student in nearbyStudents" :key="student.id">
-                    <td>{{ student.name }}</td>
+                    <td class="student-name">{{ student.name }}</td>
+                    <td><svg class="chat-icon" @click="chat" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>Chat Now !</title><path d="M12,3C17.5,3 22,6.58 22,11C22,15.42 17.5,19 12,19C10.76,19 9.57,18.82 8.47,18.5C5.55,21 2,21 2,21C4.33,18.67 4.7,17.1 4.75,16.5C3.05,15.07 2,13.13 2,11C2,6.58 6.5,3 12,3M17,12V10H15V12H17M13,12V10H11V12H13M9,12V10H7V12H9Z" /></svg></td>
                     <!-- Add more table cells for additional student data -->
                 </tr>
                 <tr v-if="nearbyStudents.length == 0">
                     <td colspan="2" class="no-users">No nearby users found</td>
                 </tr>
-            </table>
-        </div>
-        
-        <div id="chat">
-            <h1>Chat with other</h1>
-            <table>
-
             </table>
         </div>
 
@@ -131,6 +149,9 @@
         }),
 
         methods: {
+            chat(){
+                alert("lets chat")
+            },
             change(event, field){
                 const newValue = event.target.value;
 
@@ -204,6 +225,9 @@
                     querySnapshot.forEach(doc => {
                         const student = doc.data();
                         if (doc.id !== this.$root.user.email.toLowerCase()) {
+                            const studentPosition = new gm.LatLng(student.latitude, student.longitude);
+                            const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, this.player.getPosition());
+                            student.distance = distance
                             this.students.push(student);
                         }
                     });
@@ -233,6 +257,23 @@
                             scaledSize: new gm.Size(34, 34),
                         },
                     });
+
+                    const info = new gm.InfoWindow();
+
+                    let timeout = null;
+
+                    marker.addListener('click', e =>{
+                        info.setContent(`
+                            <div id="info">
+                                "<b>${student.caption}</b>"<br>
+                                I am <b>${student.distance.toFixed(2)}</b> meters away from you.
+                            </div>
+                        `);
+                        info.open(map, marker);
+
+                        clearTimeout(timeout);
+                        timeout = setTimeout(_ => info.close(), 3000);
+                    })
 
                     this.markers.push(marker);
                 }
@@ -281,10 +322,6 @@
                     },
                 });
             }
-
-            const info = new gm.InfoWindow();
-
-            let timeout = null;
 
             navigator.permissions.query({ name: 'geolocation' }).then(result => {
                 if (result.state == 'granted') {
