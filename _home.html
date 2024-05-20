@@ -64,7 +64,7 @@
             </div>
             <div class="cover-img"><img src="image/couple.png" alt=""></div>
             <div class="cover-img-title">Minder</div>
-            <div class="get-started">
+            <div v-if="!$root.user" class="get-started">
                 <p class="get-started-text">Get started now by <a href="#/register">signing up</a></p>
             </div>
         </div>
