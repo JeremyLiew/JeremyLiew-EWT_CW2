@@ -2,38 +2,53 @@
     <main>
         <div id="location">
             <table class="table">
-                <tr><td>Meter</td><td>
-                    <select v-model="meter" @change="change($event, 'meter')">
-                        <option disabled value="">Please select one</option>
-                        <option value="5000">5000</option>
-                        <option value="10000">10000</option>
-                        <option value="20000">20000</option>
-                        <option value="40000">40000</option>
-                        <option value="60000">60000</option>
-                        <option value="80000">80000</option>
-                    </select>
-                </td></tr>
+                <tr>
+                    <td>Meter</td>
+                    <td>
+                        <select v-model="meter" @change="change($event, 'meter')">
+                            <option disabled value="">Please select one</option>
+                            <option value="5000">5000</option>
+                            <option value="10000">10000</option>
+                            <option value="20000">20000</option>
+                            <option value="40000">40000</option>
+                            <option value="60000">60000</option>
+                            <option value="80000">80000</option>
+                        </select>
+                    </td>
+                </tr>
 
-                <tr><td>Gender</td><td>
-                    <select v-model="gender" @change="change($event, 'gender')">
-                        <option disabled value="">Please select one</option>
-                        <option value="all">All</option>
-                        <option value="M">Male</option>
-                        <option value="F">Female</option>
-                    </select>
-                </td></tr>
+                <tr>
+                    <td>Gender</td>
+                    <td>
+                        <select v-model="gender" @change="change($event, 'gender')">
+                            <option disabled value="">Please select one</option>
+                            <option value="all">All</option>
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                        </select>
+                    </td>
+                </tr>
 
-                <tr><td>Location </td><td>{{ lat.toFixed(3) }}, {{ lng.toFixed(3) }}</td></tr>
+                <tr>
+                    <td>Location </td>
+                    <td>{{ lat.toFixed(3) }}, {{ lng.toFixed(3) }}</td>
+                </tr>
             </table>
         </div>
 
         <div id="chat">
             <h1>Chat with others</h1>
             <table class="table table-users">
-                <tr><td colspan="2" style="text-align: center;">Nearby users</td></tr>
+                <tr>
+                    <td colspan="2" style="text-align: center;">Nearby users</td>
+                </tr>
                 <tr v-for="student in nearbyStudents" :key="student.id">
-                    <td class="student-name">{{ student.name }}</td>
-                    <td><svg class="chat-icon" @click="chat" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>Chat Now !</title><path d="M12,3C17.5,3 22,6.58 22,11C22,15.42 17.5,19 12,19C10.76,19 9.57,18.82 8.47,18.5C5.55,21 2,21 2,21C4.33,18.67 4.7,17.1 4.75,16.5C3.05,15.07 2,13.13 2,11C2,6.58 6.5,3 12,3M17,12V10H15V12H17M13,12V10H11V12H13M9,12V10H7V12H9Z" /></svg></td>
+                    <td class="student-name" :value="student.id">{{ student.name }}</td>
+                    <td><svg class="chat-icon" @click="chat(student.email)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <title>Chat Now !</title>
+                            <path
+                                d="M12,3C17.5,3 22,6.58 22,11C22,15.42 17.5,19 12,19C10.76,19 9.57,18.82 8.47,18.5C5.55,21 2,21 2,21C4.33,18.67 4.7,17.1 4.75,16.5C3.05,15.07 2,13.13 2,11C2,6.58 6.5,3 12,3M17,12V10H15V12H17M13,12V10H11V12H13M9,12V10H7V12H9Z" />
+                        </svg></td>
                 </tr>
                 <tr v-if="nearbyStudents.length == 0">
                     <td colspan="2" class="no-users">No nearby users found</td>
@@ -43,27 +58,80 @@
 
         <div id="map"></div>
 
+        <template v-if="showChat">
+            <div id="chat-window">
+                <div id="chat-lobby">
+                    <div id="chat-header">
+                        <h1>ChatRT 3.0</h1>
+                        <div>👧🏻 = <b id="count">0</b></div>
+                    </div>
+
+                    <div id="chat-body">
+                        <div style="flex: 1"></div>
+                        <ul id="chat"></ul>
+                    </div>
+
+                    <div id="chat-footer">
+                        <form id="chat-form" autocomplete="off">
+                            <button type="button" id="bold" @click="toggleBold">B</button>
+                            <button type="button" id="italic" @click="toggleItalic">I</button>
+                            <button type="button" id="underline" @click="toggleUnderline">U</button>
+                            <input type="text" id="message" placeholder="Enter Message" autofocus>
+                            <div class="emoji-picker">
+                                <select id="emoji-select">
+                                    <option value="😀">😀</option>
+                                    <option value="😊">😊</option>
+                                    <option value="😎">😎</option>
+                                    <option value="😍">😍</option>
+                                    <option value="🥳">🥳</option>
+                                    <option value="😂">😂</option>
+                                    <option value="🥰">🥰</option>
+                                    <option value="😇">😇</option>
+                                    <option value="😉">😉</option>
+                                    <option value="😜">😜</option>
+                                </select>
+                            </div>
+                            <button type="button" id="document-file">File</button>
+                            <button type="button" id="chat-image">Image</button>
+                            <button type="button" id="gallery">Gallery</button>
+                            <button type="button" id="webCam">WebCam</button>
+                            <input type="file" id="chat-file" accept="image/*" hidden multiple>
+                            <input type="file" id="fileInput" accept=".pdf, .doc, .docx" hidden multiple>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+
         <template>
             <div id="panel">
-                <button @click="panToCenter" title="Pan to Center"><img src="image/panToCenter.png" alt="Pan to Center"></button>
+                <button @click="panToCenter" title="Pan to Center"><img src="image/panToCenter.png"
+                        alt="Pan to Center"></button>
                 <template v-if="showCafes">
-                    <button @click="clearCafeMarkers(); showCafes = false" title="Remove Cafes"><img src="image/remove.png" alt="Remove Cafes"></button>
+                    <button @click="clearCafeMarkers(); showCafes = false" title="Remove Cafes"><img
+                            src="image/remove.png" alt="Remove Cafes"></button>
                 </template>
                 <template v-else>
-                    <button @click="findNearbyCafes" title="Display Nearby Cafes"><img src="image/coffee.png" alt="Find Cafes"></button>
+                    <button @click="findNearbyCafes" title="Display Nearby Cafes"><img src="image/coffee.png"
+                            alt="Find Cafes"></button>
                 </template>
                 <template v-if="showRestaurants">
-                    <button @click="clearRestaurantMarkers(); showRestaurants = false" title="Remove Restaurants"><img src="image/remove.png" alt="Remove Restaurants"></button>
+                    <button @click="clearRestaurantMarkers(); showRestaurants = false" title="Remove Restaurants"><img
+                            src="image/remove.png" alt="Remove Restaurants"></button>
                 </template>
                 <template v-else>
-                    <button @click="findNearbyRestaurants" title="Display Nearby Restaurants"><img src="image/restaurant.png" alt="Find Restaurants"></button>
+                    <button @click="findNearbyRestaurants" title="Display Nearby Restaurants"><img
+                            src="image/restaurant.png" alt="Find Restaurants"></button>
                 </template>
 
                 <template v-if="enableShowRoute">
-                    <button @click="enableShowRoute = false" title="Disable Show Route"><img src="image/remove.png" alt="Disable Show Route"></button>
+                    <button @click="enableShowRoute = false" title="Disable Show Route"><img src="image/remove.png"
+                            alt="Disable Show Route"></button>
                 </template>
                 <template v-else>
-                    <button @click="enableShowRoute= true" title="Enable Show Route"><img src="image/route.png" alt="Enable Show Route"></button>
+                    <button @click="enableShowRoute= true" title="Enable Show Route"><img src="image/route.png"
+                            alt="Enable Show Route"></button>
                 </template>
             </div>
             </div>
@@ -73,7 +141,6 @@
 </template>
 
 <script>
-
     app.component({
         data: () => ({
             player: null,
@@ -87,6 +154,8 @@
             students: [],
 
             //chat data
+            showChat: false,
+
             message: '',
             documentFile: '',
             youtubeLink: '',
@@ -94,13 +163,15 @@
             emoji: '',
             dateAndTime: '',
             mp3: '',
+            senderEmail: '',
+            receiveEmail: '',
 
             nearbyStudents: [],
 
             cafes: [],
             cafeMarkers: [],
             placesService: null,
-            showCafes : false,
+            showCafes: false,
 
             restaurant: [],
             restaurantMarkers: [],
@@ -116,8 +187,8 @@
         }),
 
         methods: {
-            chat(){
-                alert("lets chat")
+            chat(email) {
+                this.showChat = !this.showChat
             },
             calculateAndDisplayRoute(destination, type) {
                 const request = {
@@ -204,19 +275,19 @@
                     const info = new gm.InfoWindow();
 
                     marker.addListener('click', () => {
-                        if(!this.enableShowRoute){
+                        if (!this.enableShowRoute) {
                             this.placesService.getDetails({ placeId: cafe.place_id }, (place, status) => {
-                            if (status === google.maps.places.PlacesServiceStatus.OK) {
-                                const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
-                                const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
+                                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                                    const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
+                                    const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
 
-                                const distance = google.maps.geometry.spherical.computeDistanceBetween(
-                                    new google.maps.LatLng(this.lat, this.lng),
-                                    position
-                                );
-                                const distanceKm = (distance / 1000).toFixed(2);
+                                    const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                                        new google.maps.LatLng(this.lat, this.lng),
+                                        position
+                                    );
+                                    const distanceKm = (distance / 1000).toFixed(2);
 
-                                info.setContent(`
+                                    info.setContent(`
                                     <div id="info" style="text-align: center;">
                                         <div style="position: relative; display: inline-block;">
                                             <img src="${place.photos ? place.photos[0].getUrl({ maxWidth: 200, maxHeight: 200 }) : 'image/no-image.png'}"
@@ -242,15 +313,15 @@
                                         </div>
                                     </div>
                                 `);
-                                info.open(map, marker);
-                            }
-                        });
+                                    info.open(map, marker);
+                                }
+                            });
                         }
                     });
 
                     marker.addListener('click', () => {
-                        if(this.enableShowRoute){
-                            if(this.routeToCafe){
+                        if (this.enableShowRoute) {
+                            if (this.routeToCafe) {
                                 this.routeToCafe = false;
                                 this.directionsRenderer.setDirections({ routes: [] });
                             } else {
@@ -298,19 +369,19 @@
                     const info = new gm.InfoWindow();
 
                     marker.addListener('click', () => {
-                        if(!this.enableShowRoute){
+                        if (!this.enableShowRoute) {
                             this.placesService.getDetails({ placeId: restaurant.place_id }, (place, status) => {
-                            if (status === google.maps.places.PlacesServiceStatus.OK) {
-                                const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
-                                const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
+                                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                                    const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
+                                    const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
 
-                                const distance = google.maps.geometry.spherical.computeDistanceBetween(
-                                    new google.maps.LatLng(this.lat, this.lng),
-                                    position
-                                );
-                                const distanceKm = (distance / 1000).toFixed(2);
+                                    const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                                        new google.maps.LatLng(this.lat, this.lng),
+                                        position
+                                    );
+                                    const distanceKm = (distance / 1000).toFixed(2);
 
-                                info.setContent(`
+                                    info.setContent(`
                                     <div id="info" style="text-align: center;">
                                         <div style="position: relative; display: inline-block;">
                                             <img src="${place.photos ? place.photos[0].getUrl({ maxWidth: 200, maxHeight: 200 }) : 'image/no-image.png'}"
@@ -336,15 +407,15 @@
                                         </div>
                                     </div>
                                 `);
-                                info.open(map, marker);
-                            }
-                        });
+                                    info.open(map, marker);
+                                }
+                            });
                         }
                     });
 
                     marker.addListener('click', () => {
-                        if(this.enableShowRoute){
-                            if(this.routeToRestaurant){
+                        if (this.enableShowRoute) {
+                            if (this.routeToRestaurant) {
                                 this.routeToRestaurant = false;
                                 this.directionsRenderer.setDirections({ routes: [] });
                             } else {
@@ -361,7 +432,7 @@
                 const center = new gm.LatLng(this.lat, this.lng);
                 map.panTo(center);
             },
-            change(event, field){
+            change(event, field) {
                 const newValue = event.target.value;
 
                 if (field === 'meter') {
@@ -412,7 +483,7 @@
             fail(error) {
                 alert(`ERROR: (${error.code}) ${error.message}`);
             },
-            saveCoordToCloud(){
+            saveCoordToCloud() {
                 let payload = {
                     latitude: this.lat,
                     longitude: this.lng,
@@ -431,7 +502,7 @@
                     }
                     const querySnapshot = await query.get();
 
-                    if(this.player){
+                    if (this.player) {
                         const playerPosition = this.player.getPosition();
                         querySnapshot.forEach(doc => {
                             const student = doc.data();
@@ -475,8 +546,8 @@
 
                     let timeout = null;
 
-                    marker.addListener('click', e =>{
-                        if(!this.enableShowRoute){
+                    marker.addListener('click', e => {
+                        if (!this.enableShowRoute) {
                             info.setContent(`
                             <div id="info" style="text-align: center;">
                                     <div style="position: relative; display: inline-block;">
@@ -506,8 +577,8 @@
                     });
 
                     marker.addListener('click', () => {
-                        if(this.enableShowRoute){
-                            if(this.routeToUser){
+                        if (this.enableShowRoute) {
+                            if (this.routeToUser) {
                                 this.routeToUser = false;
                                 this.directionsRenderer.setDirections({ routes: [] });
                             } else {
@@ -602,18 +673,126 @@
 <style>
     :root {
         display: grid;
-        grid: 'location map'auto
-              'chat map' 1fr
-                / 200px 1fr;
+        grid: 'location map' auto 'chat map' 1fr / 200px 1fr;
         gap: 40px;
     }
 
-    #location{
+    #location {
         grid-area: location;
     }
 
-    #chat{
+    #chat {
         grid-area: chat;
+        position: relative;
+    }
+
+    /* chat box */
+    #chat-window {
+        position: absolute;
+        left: 300px;
+        top: 300px;
+        width: 700px;
+        background: white;
+        height: 400px;
+    }
+
+    #chat-lobby {
+        display: flex;
+        flex-direction: column;
+        box-shadow: rgba(50, 50, 105, 0.15) 0px 2px 5px 0px, rgba(0, 0, 0, 0.05) 0px 1px 1px 0px;
+        height: 400px;
+    }
+
+    #chat-form{
+        display: flex;
+        justify-content: center;
+    }
+
+    #chat-header {
+        padding: 10px;
+        white-space: nowrap;
+        background-color: #333;
+        color: #ccc;
+        display: flex;
+        place-items: center;
+        justify-content: space-between;
+    }
+
+    #chat-header h1 {
+        flex: 1;
+        margin: 0;
+        background: url(../image/favicon.png) no-repeat left center / 32px 32px;
+        padding-left: 40px;
+    }
+
+    #chat-header div {
+        color: #000;
+        padding: 3px 6px;
+        border-radius: 3px;
+        background-color: #ccc;
+        font-size: 1.5rem;
+    }
+
+    #chat-body {
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column-reverse;
+        padding: 10px;
+        flex: 1;
+    }
+
+    .image {
+        max-width: 200px;
+        max-height: 200px;
+        border: 1px solid #999;
+        cursor: pointer;
+    }
+
+    /* Fullscreen function */
+    .image:fullscreen {
+        object-fit: scale-down !important;
+        border: none !important;
+        background: #000 !important;
+        transform: scale(1.3);
+    }
+
+    .active {
+        outline: 5px dashed red;
+        outline-offset: -5px;
+    }
+
+    #chat-dialog {
+        border: 1px solid #000;
+        border-radius: 5px;
+        padding: 5px;
+    }
+
+    #chat-dialog::backdrop {
+        background: #0009;
+    }
+
+    #chat-dialog form {
+        display: block;
+        text-align: right;
+        margin-bottom: 5px;
+    }
+
+    #chat-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    #chat-container .image {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+    }
+
+    #chat-footer {
+        padding: 10px;
+        white-space: nowrap;
+        background-color: #333;
     }
 
     #map {
