@@ -23,6 +23,14 @@
                        maxlength="100"
                        ref="name"
                        v-focus>
+                <label>Email</label>
+                <input v-model.trim="email"
+                        type="text"
+                        disabled>
+                <label>Gender</label>
+                <input v-model.trim="gender"
+                       type="text"
+                       disabled>
                 <label>Photo</label>
                 <input type="file"
                        id="file"
@@ -33,6 +41,10 @@
                 <label for="file">
                     <img class="photo" :src="src">
                 </label>
+                <label>Caption</label>
+                <input v-model.trim="caption"
+                       type="text"
+                       required>
                 <section>
                     <button>Submit</button>
                     <button @click.prevent="reset">Reset</button>
@@ -45,14 +57,18 @@
 
 <script>
     app.component({
-        data: () => ({ 
+        data: () => ({
             name: '',
-            photo: null,            
+            email: '',
+            gender: '',
+            photo: null,
+            caption: '',
+            tempCaption: '',
+            photoUrl: null,
         }),
 
         computed: {
             src() {
-                // TODO:
                 return this.photo ? URL.createObjectURL(this.photo) : this.$root.user.photoURL;
             },
         },
@@ -80,45 +96,89 @@
                 // TODO:
                 this.name = this.$root.user.displayName;
                 this.photo = null;
+                this.caption = this.tempCaption
                 this.$refs.file.value = '';
                 this.$refs.name.focus();
+                this.photoURL = null;
             },
-            submit() { 
+            submit() {
                 this.$root.block();
 
-                // TODO: ----------------------------------
-                
                 const user = this.$root.user;
 
+                // Update user profile display name
                 user.updateProfile({ displayName: this.name });
 
+                let photoUrlPromise;
+
                 if (this.photo) {
-                    STORAGE
-                        .ref('photos')
-                        .child(user.uid + '.webp')
-                        .put(this.photo)
-                        .then(snap => snap.ref.getDownloadURL())
-                        .then(url => user.updateProfile({ photoURL: url }));
+                    const photoRef = STORAGE.ref('photos').child(user.uid + '.webp');
+                    photoUrlPromise = photoRef.put(this.photo).then(snap => snap.ref.getDownloadURL());
+
+                    // Wait for the photo URL promise to resolve
+                    return photoUrlPromise.then(photoURL => {
+                        // Update user profile with photo URL
+                        user.updateProfile({ photoURL });
+
+                        // Prepare data for Firestore
+                        let payload = {
+                            name: this.name,
+                            caption: this.caption,
+                            photo: photoURL  // Ensure photoURL is used here
+                        };
+
+                        // Save data to Firestore
+                        return STUDENTS.doc(this.$root.user.email).set(payload, { merge: true });
+                    }).then(() => {
+                        this.$root.unblock();
+                        this.$router.push('/');
+                    }).catch(error => {
+                        this.$root.unblock();
+                        console.error("Error updating profile: ", error);
+                    });
+                } else {
+                    let payload = {
+                        name: this.name,
+                        caption: this.caption,
+                    };
+
+                    // Save data to Firestore
+                    STUDENTS.doc(this.$root.user.email).set(payload, { merge: true }).then(() => {
+                        this.$root.unblock();
+                        this.$router.push('/');
+                    }).catch(error => {
+                        this.$root.unblock();
+                        console.error("Error updating profile: ", error);
+                    });
                 }
-
-                // ----------------------------------------
-
-                this.$root.unblock();
-                this.$router.push('/');
-            },
+            }
         },
 
         created() {
-            // TODO:
             if (!this.$root.user) {
                 this.$router.push('/sign-in');
                 return;
             }
 
-            // TODO:
             this.name = this.$root.user.displayName;
             this.$root.title = 'Minder Authentication';
             document.title = 'Minder : Update Profile';
+
+            this.email = this.$root.user.email;
+
+            DB.collection('user')
+            .where('email', '==', this.email)
+            .get()
+            .then(querySnapshot => {
+                querySnapshot.forEach(doc => {
+                    this.gender = doc.data().gender;
+                    this.caption = doc.data().caption;
+                    this.tempCaption = doc.data().caption;
+                });
+            })
+            .catch(error => {
+                console.error("Error getting documents: ", error);
+            });
         },
     });
 </script>

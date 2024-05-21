@@ -84,9 +84,14 @@
         },
 
         mounted() {
+            this.$nextTick(() => {
             setTimeout(() => {
-                document.querySelector('.cover-img-title').classList.add('show');
+                const coverImgTitle = document.querySelector('.cover-img-title');
+                if (coverImgTitle) {
+                    coverImgTitle.classList.add('show');
+                }
             }, 1000);
+        });
         },
 
         unmounted() {
