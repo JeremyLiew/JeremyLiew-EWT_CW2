@@ -79,6 +79,19 @@
                        type="text"
                        required
                        maxlength="100">
+
+                <label>Facebook</label>
+                <input v-model.trim="facebookLink" type="url">
+
+                <label>Twitter</label>
+                <input v-model.trim="twitterLink" type="url">
+
+                <label>Instagram</label>
+                <input v-model.trim="instagramLink" type="url">
+
+                <label>LinkedIn</label>
+                <input v-model.trim="linkedinLink" type="url">
+
                 <section>
                     <button>Submit</button>
                     <button @click.prevent="reset">Reset</button>
@@ -105,6 +118,11 @@
             lat: 0,
             lng: 0,
             acc: 0,
+
+            facebookLink: '',
+            twitterLink: '',
+            instagramLink: '',
+            linkedinLink: '',
         }),
 
         computed: {
@@ -139,6 +157,11 @@
                 this.gender = '';
                 this.photo = null;
                 this.caption = '';
+
+                this.facebookLink = '',
+                this.twitterLink = '',
+                this.instagramLink = '',
+                this.linkedinLink = '',
 
                 this.$refs.file.value = '';
                 this.$refs.email.focus();
@@ -204,6 +227,11 @@
                                 accuracy: this.acc,
                                 photo: photoURL,
                                 caption: this.caption,
+                                profileViews: 0,
+                                facebookLink: this.facebookLink,
+                                twitterLink: this.twitterLink,
+                                instagramLink: this.instagramLink,
+                                linkedinLink: this.linkedinLink
                             };
 
                             // Save data to Firestore

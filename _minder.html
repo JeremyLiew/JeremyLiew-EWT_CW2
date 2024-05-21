@@ -186,6 +186,19 @@
             chat(email) {
                 this.showChat = !this.showChat
             },
+            trackProfileView(profileEmail) {
+                const profileViewRef = STUDENTS.doc(profileEmail);
+
+                profileViewRef.get().then(doc => {
+                    if (doc.exists) {
+                        profileViewRef.update({
+                            profileViews: doc.data().profileViews + 1
+                        });
+                    }
+                }).catch(error => {
+                    console.error('Error tracking profile view:', error);
+                });
+            },
             calculateAndDisplayRoute(destination, type) {
                 const request = {
                     origin: new google.maps.LatLng(this.lat, this.lng),
@@ -545,7 +558,7 @@
                     marker.addListener('click', e => {
                         if (!this.enableShowRoute) {
                             info.setContent(`
-                            <div id="info" style="text-align: center;">
+                                <div id="info" style="text-align: center;">
                                     <div style="position: relative; display: inline-block;">
                                         <img src="${student.photo}"
                                             style="
@@ -563,9 +576,25 @@
                                     <div style="margin-top: 5px; font-size: 12px; color: gray;">
                                         I am <b>${student.distance.toFixed(2)}</b> meters away from you.
                                     </div>
+                                    <div style="margin-top: 10px;">
+                                        <a href="${student.facebookLink}" target="_blank">
+                                            <img src="image/facebook.png" alt="Facebook" style="width: 20px; height: 20px; margin: 0 5px;">
+                                        </a>
+                                        <a href="${student.twitterLink}" target="_blank">
+                                            <img src="image/twitter.png" alt="Twitter" style="width: 20px; height: 20px; margin: 0 5px;">
+                                        </a>
+                                        <a href="${student.instagramLink}" target="_blank">
+                                            <img src="image/instagram.png" alt="Instagram" style="width: 20px; height: 20px; margin: 0 5px;">
+                                        </a>
+                                        <a href="${student.linkedinLink}" target="_blank">
+                                            <img src="image/linkedin.png" alt="Link" style="width: 20px; height: 20px; margin: 0 5px;">
+                                        </a>
+                                    </div>
                                 </div>
                             `);
                             info.open(map, marker);
+
+                            this.trackProfileView(student.email)
 
                             clearTimeout(timeout);
                             timeout = setTimeout(_ => info.close(), 3000);

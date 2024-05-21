@@ -1,19 +1,8 @@
-<style>
-    .update-profile-form {
-        text-align: center;
-        margin: 50px auto;
-        padding: 20px;
-        max-width: 400px;
-        background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        border: 1px solid black;
-    }
-</style>
 <template>
     <main>
         <div class="update-profile-form">
-            <h1>Update Profile</h1>
+            <h1 class="profile-header">Update Profile</h1>
+            <div class="view-icon-container"><img class="view-icon" src="image/eye.png" alt=""> <span>{{ profileViews }}</span></div>
             <form class="form"
                   @submit.prevent="submit">
                 <label>Name</label>
@@ -45,6 +34,19 @@
                 <input v-model.trim="caption"
                        type="text"
                        required>
+
+                <label>Facebook</label>
+                <input v-model.trim="facebookLink" type="url">
+
+                <label>Twitter</label>
+                <input v-model.trim="twitterLink" type="url">
+
+                <label>Instagram</label>
+                <input v-model.trim="instagramLink" type="url">
+
+                <label>LinkedIn</label>
+                <input v-model.trim="linkedinLink" type="url">
+
                 <section>
                     <button>Submit</button>
                     <button @click.prevent="reset">Reset</button>
@@ -65,6 +67,12 @@
             caption: '',
             tempCaption: '',
             photoUrl: null,
+            profileViews: 0,
+
+            facebookLink: '',
+            twitterLink: '',
+            instagramLink: '',
+            linkedinLink: '',
         }),
 
         computed: {
@@ -93,20 +101,33 @@
                     });
             },
             reset() {
-                // TODO:
                 this.name = this.$root.user.displayName;
                 this.photo = null;
-                this.caption = this.tempCaption
                 this.$refs.file.value = '';
                 this.$refs.name.focus();
                 this.photoURL = null;
+
+                DB.collection('user')
+                .where('email', '==', this.email)
+                .get()
+                .then(querySnapshot => {
+                    querySnapshot.forEach(doc => {
+                        this.caption = doc.data().caption;
+                        this.facebookLink = doc.data().facebookLink;
+                        this.twitterLink = doc.data().twitterLink;
+                        this.instagramLink = doc.data().instagramLink;
+                        this.linkedinLink = doc.data().linkedinLink;
+                    });
+                })
+                .catch(error => {
+                    console.error("Error getting documents: ", error);
+                });
             },
             submit() {
                 this.$root.block();
 
                 const user = this.$root.user;
 
-                // Update user profile display name
                 user.updateProfile({ displayName: this.name });
 
                 let photoUrlPromise;
@@ -115,19 +136,20 @@
                     const photoRef = STORAGE.ref('photos').child(user.uid + '.webp');
                     photoUrlPromise = photoRef.put(this.photo).then(snap => snap.ref.getDownloadURL());
 
-                    // Wait for the photo URL promise to resolve
                     return photoUrlPromise.then(photoURL => {
-                        // Update user profile with photo URL
                         user.updateProfile({ photoURL });
 
-                        // Prepare data for Firestore
                         let payload = {
                             name: this.name,
                             caption: this.caption,
-                            photo: photoURL  // Ensure photoURL is used here
+                            photo: photoURL,
+
+                            facebookLink : this.facebookLink,
+                            twitterLink : this.twitterLink,
+                            instagramLink : this.instagramLink,
+                            linkedinLink : this.linkedinLink,
                         };
 
-                        // Save data to Firestore
                         return STUDENTS.doc(this.$root.user.email).set(payload, { merge: true });
                     }).then(() => {
                         this.$root.unblock();
@@ -142,7 +164,6 @@
                         caption: this.caption,
                     };
 
-                    // Save data to Firestore
                     STUDENTS.doc(this.$root.user.email).set(payload, { merge: true }).then(() => {
                         this.$root.unblock();
                         this.$router.push('/');
@@ -173,7 +194,12 @@
                 querySnapshot.forEach(doc => {
                     this.gender = doc.data().gender;
                     this.caption = doc.data().caption;
-                    this.tempCaption = doc.data().caption;
+                    this.profileViews = doc.data().profileViews;
+
+                    this.facebookLink = doc.data().facebookLink;
+                    this.twitterLink = doc.data().twitterLink;
+                    this.instagramLink = doc.data().instagramLink;
+                    this.linkedinLink = doc.data().linkedinLink;
                 });
             })
             .catch(error => {
@@ -182,3 +208,27 @@
         },
     });
 </script>
+
+<style>
+    .update-profile-form {
+        text-align: center;
+        margin: 50px auto;
+        padding: 20px;
+        max-width: 400px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        border: 1px solid black;
+    }
+    .view-icon-container {
+        margin: 10px 0;
+        display: flex;
+        justify-content: center;
+    }
+    .view-icon {
+        height: 20px;
+    }
+    .profile-header{
+        margin-bottom: 0 !important;
+    }
+</style>
