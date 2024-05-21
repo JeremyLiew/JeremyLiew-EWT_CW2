@@ -557,6 +557,36 @@
 
                     marker.addListener('click', e => {
                         if (!this.enableShowRoute) {
+                            let socialLinks = '';
+                            if (student.facebookLink) {
+                                socialLinks += `
+                                    <a href="${student.facebookLink}" target="_blank">
+                                        <img src="image/facebook.png" alt="Facebook" style="width: 20px; height: 20px; margin: 0 5px;">
+                                    </a>
+                                `;
+                            }
+                            if (student.twitterLink) {
+                                socialLinks += `
+                                    <a href="${student.twitterLink}" target="_blank">
+                                        <img src="image/twitter.png" alt="Twitter" style="width: 20px; height: 20px; margin: 0 5px;">
+                                    </a>
+                                `;
+                            }
+                            if (student.instagramLink) {
+                                socialLinks += `
+                                    <a href="${student.instagramLink}" target="_blank">
+                                        <img src="image/instagram.png" alt="Instagram" style="width: 20px; height: 20px; margin: 0 5px;">
+                                    </a>
+                                `;
+                            }
+                            if (student.linkedinLink) {
+                                socialLinks += `
+                                    <a href="${student.linkedinLink}" target="_blank">
+                                        <img src="image/linkedin.png" alt="LinkedIn" style="width: 20px; height: 20px; margin: 0 5px;">
+                                    </a>
+                                `;
+                            }
+
                             info.setContent(`
                                 <div id="info" style="text-align: center;">
                                     <div style="position: relative; display: inline-block;">
@@ -577,18 +607,7 @@
                                         I am <b>${student.distance.toFixed(2)}</b> meters away from you.
                                     </div>
                                     <div style="margin-top: 10px;">
-                                        <a href="${student.facebookLink}" target="_blank">
-                                            <img src="image/facebook.png" alt="Facebook" style="width: 20px; height: 20px; margin: 0 5px;">
-                                        </a>
-                                        <a href="${student.twitterLink}" target="_blank">
-                                            <img src="image/twitter.png" alt="Twitter" style="width: 20px; height: 20px; margin: 0 5px;">
-                                        </a>
-                                        <a href="${student.instagramLink}" target="_blank">
-                                            <img src="image/instagram.png" alt="Instagram" style="width: 20px; height: 20px; margin: 0 5px;">
-                                        </a>
-                                        <a href="${student.linkedinLink}" target="_blank">
-                                            <img src="image/linkedin.png" alt="Link" style="width: 20px; height: 20px; margin: 0 5px;">
-                                        </a>
+                                        ${socialLinks}
                                     </div>
                                 </div>
                             `);
