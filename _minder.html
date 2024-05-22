@@ -73,8 +73,7 @@
 
                     <div id="chat-footer">
                         <form @keydown.enter.prevent="sendMessage" id="chat-form" autocomplete="off">
-                            <button :disabled="speech" @click="startSpeechRecognition">{{ speech ? 'Stop Speech':'Start
-                                Speech' }}</button>
+                            <button :disabled="speech" @click="startSpeechRecognition">{{ speech ? 'Stop Speech':'Start Speech' }}</button>
                             <input v-model="message" type="text" id="message" placeholder="Enter Message" autofocus
                                 ref="message">
                             <div class="emoji-picker">
@@ -113,7 +112,7 @@
             <div>
                 <dialog id="chat-dialog" ref="chatDialog">
                     <form method="dialog"><button @click="closeDialog">❌</button></form>
-                    <div ref="chatContainer" id="chatContainer"></div>
+                    <div ref="chatContainer" id="chat-container"></div>
                 </dialog>
             </div>
 
@@ -868,6 +867,12 @@
                                 }
                             }
                         });
+
+                        $(document).on('click', '.image', e => {
+                            document.fullscreenElement ?
+                                document.exitFullscreen() :
+                                e.target.requestFullscreen();
+                        });
                     });
             },
 
@@ -932,7 +937,7 @@
                 $('#chat-box').append(`
                     <li class="sender">
                     <div>
-                        <img src="${url}" alt="Image" class="image"/>
+                        <img src="${url}" alt="Image" />
                         <a style="font-size: 10px;">${dateTime.date} ${dateTime.time}</a>
                     </div>
                     </li>
@@ -1046,8 +1051,8 @@
                 CHATS.doc().set(data);
             },
 
-            showGallery() {
-                $('#chatContainer').empty();
+            showGallery() { // cannot show in the Gallery
+                $('#chat-container').empty()
                 const images = document.querySelectorAll('.image');
                 if (images.length > 0) {
                     const clonedImages = Array.from(images).map(image => image.cloneNode(true));
@@ -1087,13 +1092,13 @@
                 this.isCapturing = true;
                 const canvas = document.createElement('canvas');
                 const video = this.$refs.video;
-                canvas.width = 200;
-                canvas.height = 200;
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
                 const context = canvas.getContext('2d');
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const dateTime = this.generateDateTime(); // Assuming generateDateTime is defined
                 const imageDataURL = canvas.toDataURL('image/webp');
-                this.sendImageMessage(imageDataURL, dateTime);
+                this.sendImageMessage(imageDataURL,dateTime);
                 this.closeCamera();
             },
 
@@ -1472,8 +1477,8 @@
         height: 20px;
     }
 
-    /* chat box */
-    #chat-window {
+        /* chat box */
+        #chat-window {
         position: absolute;
         left: 300px;
         top: 300px;
