@@ -561,7 +561,6 @@
                         this.nearbyStudents = this.students.filter(student => {
                             const studentPosition = new gm.LatLng(student.latitude, student.longitude);
                             const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, playerPosition);
-                            // Convert distance from meters to kilometers and check if it's within the specified radius
                             return distance / 1000 <= parseInt(this.meter) / 1000;
                         });
 
@@ -697,181 +696,197 @@
                 this.receiverName = name;
                 this.senderName = this.$root.user.displayName;
 
-                // Clear existing chat history in the chat-box
                 $('#chat-box').empty();
-                this.historyData = []
+                this.historyData = [];
 
+                const chatHistory = [];
+
+                const processChatDocument = (doc) => {
+                    const data = doc.data();
+                    chatHistory.push({
+                        message: data.message,
+                        image: data.image,
+                        fileName: data.fileName,
+                        fileType: data.fileType,
+                        fileUrl: data.fileUrl,
+                        youtubeLink: data.youtubeLink,
+                        mp3: data.mp3,
+                        date: data.date,
+                        time: data.time,
+                        senderEmail: data.senderEmail,
+                        receiverEmail: data.receiverEmail,
+                    });
+
+                    // Sort the chat history by date and time
+                    chatHistory.sort((a, b) => {
+                        const dateA = new Date(`${a.date} ${a.time}`);
+                        const dateB = new Date(`${b.date} ${b.time}`);
+                        return dateA - dateB;
+                    });
+
+                    this.historyData = chatHistory;
+
+                    $('#chat-box').empty();
+
+                    let badwords = /fuck|sohai|jibai/gi;
+
+                    this.historyData.forEach(history => {
+                        if (history.message != null) {
+                            let newMessage = history.message.replace(badwords, '******');
+                            newMessage = newMessage.replace(/\*(.*?)\*/g, '<b>$1</b>');
+                            newMessage = newMessage.replace(/_(.*?)_/g, '<u>$1</u>');
+                            newMessage = newMessage.replace(/#(.*?)#/g, '<i>$1</i>');
+
+                            if (history.senderEmail === this.senderEmail) {
+                                $('#chat-box').append(`
+                                    <li class="sender">
+                                        <div>
+                                            <b>${this.senderName}</b><br>
+                                            <a>${newMessage}</a>
+                                            <a style="font-size: 10px;">${history.date} ${history.time}</a>
+                                        </div>
+                                    </li>
+                                `);
+                            } else {
+                                $('#chat-box').append(`
+                                    <li class="receiver">
+                                        <div>
+                                            <b>${this.receiverName}</b><br>
+                                            <a>${newMessage}</a>
+                                            <a style="font-size: 10px;">${history.date} ${history.time}</a>
+                                        </div>
+                                    </li>
+                                `);
+                            }
+                        } else if (history.image != null) {
+                            if (history.senderEmail === this.senderEmail) {
+                                $('#chat-box').append(`
+                                    <li class="sender">
+                                        <div>
+                                            <b>${this.senderName}</b> sent an image<br>
+                                            <img src="${history.image}" class="image"> <br>
+                                            <a style="font-size: 10px;">${history.date} ${history.time}</a>
+                                        </div>
+                                    </li>
+                                `);
+                            } else {
+                                $('#chat-box').append(`
+                                    <li class="receiver">
+                                        <div>
+                                            <b>${this.receiverName}</b> sent an image<br>
+                                            <img src="${history.image}" class="image"> <br>
+                                            <a style="font-size: 10px;">${history.date} ${history.time}</a>
+                                        </div>
+                                    </li>
+                                `);
+                            }
+                        } else if (history.fileUrl != null) {
+                            if (history.senderEmail === this.senderEmail) {
+                                $('#chat-box').append(`
+                                    <li class="sender">
+                                        <div>
+                                            <b>${this.senderName}</b> sent a document<br>
+                                            <a href="${history.fileUrl}" download="${history.fileName}">${history.fileType}</a>
+                                            <a style="font-size: 10px;">${history.date} ${history.time}</a>
+                                        </div>
+                                    </li>
+                                `);
+                            } else {
+                                $('#chat-box').append(`
+                                    <li class="receiver">
+                                        <div>
+                                            <b>${this.receiverName}</b> sent a document<br>
+                                            <a href="${history.fileUrl}" download="${history.fileName}">${history.fileType}</a>
+                                            <a style="font-size: 10px;">${history.date} ${history.time}</a>
+                                        </div>
+                                    </li>
+                                `);
+                            }
+                        } else if (history.youtubeLink != null) {
+                            if (history.senderEmail === this.senderEmail) {
+                                $('#chat-box').append(`
+                                    <li class="sender">
+                                        <div>
+                                            <b>${this.senderName}</b> sent a video<br>
+                                            <iframe width="400" height="300"
+                                                    src="https://www.youtube.com/embed/${history.youtubeLink}"
+                                                    frameborder="0"
+                                                    allowfullscreen></iframe> <br>
+                                            <a style="font-size: 10px;">${history.date} ${history.time}</a>
+                                        </div>
+                                    </li>
+                                `);
+                            } else {
+                                $('#chat-box').append(`
+                                    <li class="receiver">
+                                        <div>
+                                            <b>${this.receiverName}</b> sent a video<br>
+                                            <iframe width="400" height="300"
+                                                    src="https://www.youtube.com/embed/${history.youtubeLink}"
+                                                    frameborder="0"
+                                                    allowfullscreen></iframe> <br>
+                                            <a style="font-size: 10px;">${history.date} ${history.time}</a>
+                                        </div>
+                                    </li>
+                                `);
+                            }
+                        } else if (history.mp3 != null) {
+                            if (history.senderEmail === this.senderEmail) {
+                                $('#chat-box').append(`
+                                    <li class="sender">
+                                    <div>
+                                        <p>File: ${history.fileName}</p>
+                                        <audio controls>
+                                        <source src="${history.mp3}" type="audio/mpeg">
+                                        </audio>
+                                        <p style="font-size: 10px;">${history.date} ${history.time}</p>
+                                    </div>
+                                    </li>
+                                `);
+                            } else {
+                                $('#chat-box').append(`
+                                    <li class="receiver">
+                                    <div>
+                                        <p>File: ${history.fileName}</p>
+                                        <audio controls>
+                                        <source src="${history.mp3}" type="audio/mpeg">
+                                        </audio>
+                                        <p style="font-size: 10px;">${history.date} ${history.time}</p>
+                                    </div>
+                                    </li>
+                                `);
+                            }
+                        }
+                    });
+
+                    $(document).on('click', '.image', e => {
+                        document.fullscreenElement ?
+                            document.exitFullscreen() :
+                            e.target.requestFullscreen();
+                    });
+                };
+
+                // Real-time listener for messages sent by the current user
                 DB.collection('chat')
                     .where('senderEmail', '==', this.senderEmail)
                     .where('receiverEmail', '==', this.receiverEmail)
-                    .get()
-                    .then(querySnapshot => {
-                        querySnapshot.forEach(doc => {
-                            const data = doc.data();
-                            this.historyData.push({
-                                message: data.message,
-                                image: data.image,
-                                fileName: data.fileName,
-                                fileType: data.fileType,
-                                fileUrl: data.fileUrl,
-                                youtubeLink: data.youtubeLink,
-                                mp3: data.mp3,
-                                date: data.date,
-                                time: data.time,
-                                senderEmail: data.senderEmail,
-                                receiverEmail: data.receiverEmail,
-                            });
-                        });
-
-                        // Sort the chat history by date and time
-                        this.historyData.sort((a, b) => {
-                            const dateA = new Date(`${a.date} ${a.time}`);
-                            const dateB = new Date(`${b.date} ${b.time}`);
-                            return dateA - dateB;
-                        });
-
-                        // Process and append messages after data is fetched
-                        let badwords = /fuck|sohai|jibai/gi;
-
-                        this.historyData.forEach(history => {
-
-                            if (history.message != null) {
-                                let newMessage = history.message.replace(badwords, '******');
-                                newMessage = newMessage.replace(/\*(.*?)\*/g, '<b>$1</b>');
-                                newMessage = newMessage.replace(/_(.*?)_/g, '<u>$1</u>');
-                                newMessage = newMessage.replace(/#(.*?)#/g, '<i>$1</i>');
-
-                                if (history.senderEmail === this.senderEmail) {
-                                    $('#chat-box').append(`
-                                        <li class="sender">
-                                            <div>
-                                                <b>${this.senderName}</b><br>
-                                                <a>${newMessage}</a>
-                                                <a style="font-size: 10px;">${history.date} ${history.time}</a>
-                                            </div>
-                                        </li>
-                                    `);
-                                } else {
-                                    $('#chat-box').append(`
-                                        <li class="receiver">
-                                            <div>
-                                                <b>${this.receiverName}</b><br>
-                                                <a>${newMessage}</a>
-                                                <a style="font-size: 10px;">${history.date} ${history.time}</a>
-                                            </div>
-                                        </li>
-                                    `);
-                                }
-                            }
-                            else if (history.image != null) {
-                                if (history.senderEmail === this.senderEmail) {
-                                    $('#chat-box').append(`
-                                        <li class="sender">
-                                            <div>
-                                                <b>${this.senderName}</b> sent an image<br>
-                                                <img src="${history.image}" class="image"> <br>
-                                                <a style="font-size: 10px;">${history.date} ${history.time}</a>
-                                            </div>
-                                        </li>
-                                    `);
-                                } else {
-                                    $('#chat-box').append(`
-                                        <li class="sender">
-                                            <div>
-                                                <b>${this.receiverName}</b> sent an image<br>
-                                                <img src="${history.image}" class="image"> <br>
-                                                <a style="font-size: 10px;">${history.date} ${history.time}</a>
-                                            </div>
-                                        </li>
-                                    `);
-                                }
-                            }
-                            else if (history.fileUrl != null) {
-                                if (history.senderEmail === this.senderEmail) {
-                                    $('#chat-box').append(`
-                                        <li class="sender">
-                                            <div>
-                                                <b>${this.senderName}</b> sent an document<br>
-                                                <a href="${history.fileUrl}" download="${history.fileName}">${history.fileType}</a>
-                                                <a style="font-size: 10px;">${history.date} ${history.time}</a>
-                                            </div>
-                                        </li>
-                                    `);
-                                } else {
-                                    $('#chat-box').append(`
-                                        <li class="sender">
-                                            <div>
-                                                <b>${this.receiverName}</b> sent an document<br>
-                                                <a href="${history.fileUrl}" download="${history.fileName}">${history.fileType}</a>
-                                                <a style="font-size: 10px;">${history.date} ${history.time}</a>
-                                            </div>
-                                        </li>
-                                    `);
-                                }
-
-                            }
-                            else if (history.youtubeLink != null) {
-                                if (history.senderEmail === this.senderEmail) {
-                                    $('#chat').append(`
-                                        <li class="sender">
-                                            <div>
-                                                <b>${this.senderName}</b> sent a video<br>
-                                                <iframe width="400" height="300"
-                                                        src="https://www.youtube.com/embed/${history.youtubeLink}"
-                                                        frameborder="0"
-                                                        allowfullscreen></iframe> <br>
-                                                <a style="font-size: 10px;">${history.date} ${history.time}</a>
-                                            </div>
-                                        </li>
-                                    `);
-                                } else {
-                                    $('#chat-box').append(`
-                                        <li class="sender">
-                                            <div>
-                                                <b>${this.receiverName}</b> sent a video<br>
-                                                <iframe width="400" height="300"
-                                                        src="https://www.youtube.com/embed/${history.youtubeLink}"
-                                                        frameborder="0"
-                                                        allowfullscreen></iframe> <br>
-                                                <a style="font-size: 10px;">${history.date} ${history.time}</a>
-                                            </div>
-                                        </li>
-                                    `);
-                                }
-                            }
-                            else if (history.mp3 != null) {
-                                if (history.senderEmail === this.senderEmail) {
-                                    $('#chat-box').append(`
-                                        <li class="sender">
-                                        <div>
-                                            <p>File: ${history.fileName}</p>
-                                            <audio controls>
-                                            <source src="${history.mp3}" type="audio/mpeg">
-                                            </audio>
-                                            <p style="font-size: 10px;">${history.date} ${history.time}</p>
-                                        </div>
-                                        </li>
-                                    `);
-                                } else {
-                                    $('#chat-box').append(`
-                                        <li class="sender">
-                                        <div>
-                                            <p>File: ${history.fileName}</p>
-                                            <audio controls>
-                                            <source src="${history.mp3}" type="audio/mpeg">
-                                            </audio>
-                                            <p style="font-size: 10px;">${history.date} ${history.time}</p>
-                                        </div>
-                                        </li>
-                                    `);
-                                }
+                    .onSnapshot(querySnapshot => {
+                        querySnapshot.docChanges().forEach(change => {
+                            if (change.type === 'added') {
+                                processChatDocument(change.doc);
                             }
                         });
+                    });
 
-                        $(document).on('click', '.image', e => {
-                            document.fullscreenElement ?
-                                document.exitFullscreen() :
-                                e.target.requestFullscreen();
+                // Real-time listener for messages received by the current user
+                DB.collection('chat')
+                    .where('senderEmail', '==', this.receiverEmail)
+                    .where('receiverEmail', '==', this.senderEmail)
+                    .onSnapshot(querySnapshot => {
+                        querySnapshot.docChanges().forEach(change => {
+                            if (change.type === 'added') {
+                                processChatDocument(change.doc);
+                            }
                         });
                     });
             },
@@ -929,7 +944,6 @@
                     receiverEmail: this.receiverEmail,
                 };
 
-                // Save data to Firestore
                 CHATS.doc().set(data);
             },
 
@@ -957,7 +971,6 @@
                     receiverEmail: this.receiverEmail,
                 };
 
-                // Save data to Firestore
                 CHATS.doc().set(data);
             },
 
@@ -1034,7 +1047,6 @@
                     receiverEmail: this.receiverEmail
                 };
 
-                // Append the MP3 file with an audio player to the chat box
                 $('#chat-box').append(`
                     <li class="sender">
                     <div>
@@ -1047,11 +1059,10 @@
                     </li>
                 `);
 
-                // Save data to Firestore
                 CHATS.doc().set(data);
             },
 
-            showGallery() { // cannot show in the Gallery
+            showGallery() {
                 $('#chat-container').empty()
                 const images = document.querySelectorAll('.image');
                 if (images.length > 0) {
@@ -1096,7 +1107,7 @@
                 canvas.height = video.videoHeight;
                 const context = canvas.getContext('2d');
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const dateTime = this.generateDateTime(); // Assuming generateDateTime is defined
+                const dateTime = this.generateDateTime();
                 const imageDataURL = canvas.toDataURL('image/webp');
                 this.sendImageMessage(imageDataURL,dateTime);
                 this.closeCamera();
@@ -1110,14 +1121,14 @@
                 }
             },
 
-            startSpeechRecognition() { // close will continue recording
+            startSpeechRecognition() {
                 if (!('webkitSpeechRecognition' in window)) {
                     alert('Speech recognition is not supported in this browser');
                     return;
                 }
 
                 const recognition = new webkitSpeechRecognition();
-                recognition.lang = 'en-US'; // Set language
+                recognition.lang = 'en-US';
                 recognition.continuous = true;
                 recognition.interimResults = true;
 
@@ -1131,13 +1142,12 @@
                     const transcript = Array.from(event.results)
                         .map(result => result[0].transcript)
                         .join('');
-                    // Set the transcribed text as the value of the input message field
                     this.message = transcript;
 
                     silenceTimer = setTimeout(() => {
                         recognition.stop();
                         this.speech = false;
-                    }, 2000); // Stop after 2 seconds of silence
+                    }, 2000);
                 };
 
                 recognition.onerror = (event) => {
@@ -1152,7 +1162,7 @@
                 for (const file of files) {
                     this.getMp3(file);
                 }
-                event.target.value = null; // Reset the input
+                event.target.value = null;
             },
 
             getMp3(file) {
@@ -1211,7 +1221,7 @@
                 for (const file of files) {
                     this.getFiles(file);
                 }
-                event.target.value = null; // Reset the input
+                event.target.value = null;
             },
 
             triggerImage() {
@@ -1232,7 +1242,6 @@
                         return url.href;
                     }
                 } catch {
-                    // Do nothing
                 }
                 return null;
             },
@@ -1259,7 +1268,7 @@
                 if (this.lastSubmissionTime && currentTime - this.lastSubmissionTime < 10000) {
                     this.submissionCount++;
                 } else {
-                    this.submissionCount = 1; // Reset count if time window has passed
+                    this.submissionCount = 1;
                 }
                 this.lastSubmissionTime = currentTime;
 
