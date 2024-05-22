@@ -695,10 +695,7 @@
                 this.senderEmail = this.$root.user.email;
                 this.receiverEmail = email;
                 this.receiverName = name;
-
-                // cannot get the user name from root
-                // this.senderName = this.$root.user.name;
-                // alert(this.$root.user.name) 
+                this.senderName = this.$root.user.displayName;
 
                 // Clear existing chat history in the chat-box
                 $('#chat-box').empty();
@@ -748,7 +745,7 @@
                                     $('#chat-box').append(`
                                         <li class="sender">
                                             <div>
-                                                
+                                                <b>${this.senderName}</b><br>
                                                 <a>${newMessage}</a>
                                                 <a style="font-size: 10px;">${history.date} ${history.time}</a>
                                             </div>
@@ -771,7 +768,7 @@
                                     $('#chat-box').append(`
                                         <li class="sender">
                                             <div>
-                                                <b></b> sent an image<br>
+                                                <b>${this.senderName}</b> sent an image<br>
                                                 <img src="${history.image}" class="image"> <br>
                                                 <a style="font-size: 10px;">${history.date} ${history.time}</a>
                                             </div>
@@ -794,7 +791,7 @@
                                     $('#chat-box').append(`
                                         <li class="sender">
                                             <div>
-                                                <b></b> sent an document<br>
+                                                <b>${this.senderName}</b> sent an document<br>
                                                 <a href="${history.fileUrl}" download="${history.fileName}">${history.fileType}</a>
                                                 <a style="font-size: 10px;">${history.date} ${history.time}</a>
                                             </div>
@@ -818,7 +815,7 @@
                                     $('#chat').append(`
                                         <li class="sender">
                                             <div>
-                                                <b></b> sent a video<br>
+                                                <b>${this.senderName}</b> sent a video<br>
                                                 <iframe width="400" height="300"
                                                         src="https://www.youtube.com/embed/${history.youtubeLink}"
                                                         frameborder="0"
@@ -872,7 +869,6 @@
                         });
                     });
             },
-
 
             sendMessage() {
                 let dateTime = this.generateDateTime();
@@ -1095,7 +1091,7 @@
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const dateTime = this.generateDateTime(); // Assuming generateDateTime is defined
                 const imageDataURL = canvas.toDataURL('image/webp');
-                this.sendImageMessage(imageDataURL, dateTime);
+                this.sendImageMessage(imageDataURL,dateTime);
                 this.closeCamera();
             },
 
@@ -1161,7 +1157,6 @@
                         const url = e.target.result;
                         const fileName = file.name;
                         const fileType = file.type;
-                        const fileSize = file.size;
 
                         this.sendMp3(fileName, fileType, url, dateTime);
                     };
