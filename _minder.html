@@ -73,7 +73,7 @@
                         <form @keydown.enter.prevent="sendMessage" id="chat-form" autocomplete="off">
                             <input v-model="message" type="text" id="message" placeholder="Enter Message" autofocus ref="message">
                             <div class="emoji-picker">
-                                <select id="emoji-select" @click="insertEmoji">
+                                <select id="emoji-select" @click="resetEmojiSelect" @change="insertEmoji">
                                     <option value="😀">😀</option>
                                     <option value="😊">😊</option>
                                     <option value="😎">😎</option>
@@ -306,17 +306,24 @@
                 }, 10000);
             },
 
-            insertEmoji(event) { //cannot choose the same emoji
+            insertEmoji(event) {
                 const emoji = event.target.value;
-                const textBox = this.$refs.message;
-                const startPos = textBox.selectionStart;
-                const endPos = textBox.selectionEnd;
-                const text = this.message;
-                this.message = text.substring(0, startPos) + emoji + text.substring(endPos);
-                this.$nextTick(() => {
-                    textBox.focus();
-                    textBox.setSelectionRange(startPos + emoji.length, startPos + emoji.length);
-                });
+                if (emoji) {
+                    const textBox = this.$refs.message;
+                    const startPos = textBox.selectionStart;
+                    const endPos = textBox.selectionEnd;
+                    const text = this.message;
+                    this.message = text.substring(0, startPos) + emoji + text.substring(endPos);
+                    this.$nextTick(() => {
+                        textBox.focus();
+                        textBox.setSelectionRange(startPos + emoji.length, startPos + emoji.length);
+                    });
+                    this.resetEmojiSelect();
+                }
+            },
+            resetEmojiSelect() {
+                const emojiSelect = document.getElementById('emoji-select');
+                emojiSelect.value = '';
             },
 
             generateDateTime() {
