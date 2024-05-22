@@ -60,8 +60,8 @@
             <div id="chat-window">
                 <div id="chat-lobby">
                     <div id="chat-header">
-                        <h1>ChatRT 3.0</h1>
-                        <div>👧🏻 = <b id="count">0</b></div>
+                        <h1>{{ this.receiverName }}</h1>
+                        <div id="closeChat" style="background-color: #333;"><form method="closeChat" style=""><button @click="closeChat">❌</button></form></div>
                     </div>
 
                     <div id="chat-body" @dragenter.prevent="handleDragEnter" @dragover.prevent="handleDragOver"
@@ -192,7 +192,7 @@
             showChat: false,
 
             historyData: [],
-            message: null,
+            message: '',
             documentFile: null,
             youtubeLink: null,
             image: null,
@@ -689,6 +689,10 @@
                 this.restaurantMarkers = [];
             },
 
+            closeChat(){
+                this.showChat = !this.showChat;
+            },
+
             chat(email, name) {
                 this.showChat = !this.showChat;
                 this.senderEmail = this.$root.user.email;
@@ -741,8 +745,7 @@
                                 $('#chat-box').append(`
                                     <li class="sender">
                                         <div>
-                                            <b>${this.senderName}</b> <br>
-                                            <a>${newMessage}</a>
+                                            <b>${this.senderName} :</b><a>${newMessage}</a><br>
                                             <a style="font-size: 10px;">${history.date} ${history.time}</a>
                                         </div>
                                     </li>
@@ -751,8 +754,7 @@
                                 $('#chat-box').append(`
                                     <li class="receiver">
                                         <div>
-                                            <b>${this.receiverName}</b><br>
-                                            <a>${newMessage}</a>
+                                            <b>${this.receiverName}: </b><a>${newMessage}</a><br>
                                             <a style="font-size: 10px;">${history.date} ${history.time}</a>
                                         </div>
                                     </li>
@@ -763,7 +765,7 @@
                                 $('#chat-box').append(`
                                     <li class="sender">
                                         <div>
-                                            <b>${this.senderName}</b> sent an image<br>
+                                            <b>${this.senderName}: </b> sent an image <br>
                                             <img src="${history.image}" class="image"> <br>
                                             <a style="font-size: 10px;">${history.date} ${history.time}</a>
                                         </div>
@@ -773,7 +775,7 @@
                                 $('#chat-box').append(`
                                     <li class="receiver">
                                         <div>
-                                            <b>${this.receiverName}</b> sent an image<br>
+                                            <b>${this.receiverName}: </b> sent an image<br>
                                             <img src="${history.image}" class="image"> <br>
                                             <a style="font-size: 10px;">${history.date} ${history.time}</a>
                                         </div>
@@ -785,8 +787,8 @@
                                 $('#chat-box').append(`
                                     <li class="sender">
                                         <div>
-                                            <b>${this.senderName}</b> sent a document<br>
-                                            <a href="${history.fileUrl}" download="${history.fileName}">${history.fileType}</a>
+                                            <b>${this.senderName}: </b> sent a document<br>
+                                            <a href="${history.fileUrl}" download="${history.fileName}">${history.fileType}</a><br>
                                             <a style="font-size: 10px;">${history.date} ${history.time}</a>
                                         </div>
                                     </li>
@@ -795,8 +797,8 @@
                                 $('#chat-box').append(`
                                     <li class="receiver">
                                         <div>
-                                            <b>${this.receiverName}</b> sent a document<br>
-                                            <a href="${history.fileUrl}" download="${history.fileName}">${history.fileType}</a>
+                                            <b>${this.receiverName}: </b> sent a document<br>
+                                            <a href="${history.fileUrl}" download="${history.fileName}">${history.fileType}</a><br>
                                             <a style="font-size: 10px;">${history.date} ${history.time}</a>
                                         </div>
                                     </li>
@@ -807,7 +809,7 @@
                                 $('#chat-box').append(`
                                     <li class="sender">
                                         <div>
-                                            <b>${this.senderName}</b> sent a video<br>
+                                            <b>${this.senderName}: </b> sent a video<br>
                                             <iframe width="400" height="300"
                                                     src="https://www.youtube.com/embed/${history.youtubeLink}"
                                                     frameborder="0"
@@ -820,7 +822,7 @@
                                 $('#chat-box').append(`
                                     <li class="receiver">
                                         <div>
-                                            <b>${this.receiverName}</b> sent a video<br>
+                                            <b>${this.receiverName}: </b> sent a video<br>
                                             <iframe width="400" height="300"
                                                     src="https://www.youtube.com/embed/${history.youtubeLink}"
                                                     frameborder="0"
@@ -835,10 +837,10 @@
                                 $('#chat-box').append(`
                                     <li class="sender">
                                     <div>
-                                        <p>File: ${history.fileName}</p>
+                                        <p>File: ${history.fileName}: </p><br>
                                         <audio controls>
                                         <source src="${history.mp3}" type="audio/mpeg">
-                                        </audio>
+                                        </audio><br>
                                         <p style="font-size: 10px;">${history.date} ${history.time}</p>
                                     </div>
                                     </li>
@@ -847,10 +849,10 @@
                                 $('#chat-box').append(`
                                     <li class="receiver">
                                     <div>
-                                        <p>File: ${history.fileName}</p>
+                                        <p>File: ${history.fileName}: </p><br>
                                         <audio controls>
                                         <source src="${history.mp3}" type="audio/mpeg">
-                                        </audio>
+                                        </audio><br>
                                         <p style="font-size: 10px;">${history.date} ${history.time}</p>
                                     </div>
                                     </li>
@@ -919,12 +921,15 @@
                 newMessage = newMessage.replace(/\*(.*?)\*/g, '<b>$1</b>');
                 newMessage = newMessage.replace(/_(.*?)_/g, '<u>$1</u>');
                 newMessage = newMessage.replace(/#(.*?)#/g, '<i>$1</i>');
+                newMessage = newMessage.replace(/~~(.*?)~~/g, '<s>$1</s>'); // Strikethrough
+                newMessage = newMessage.replace(/`(.*?)`/g, '<code>$1</code>'); // Monospace
+                newMessage = newMessage.replace(/\^(.*?)\^/g, '<sup>$1</sup>'); // Superscript
+                newMessage = newMessage.replace(/~(.*?)~/g, '<sub>$1</sub>');   // Subscript
 
                 $('#chat-box').append(`
                     <li class="sender">
                     <div>
-                        <b></b> 
-                        <a>${newMessage}</a>
+                        <b>${this.senderName}: </b><a>${newMessage}</a><br>
                         <a style="font-size: 10px;">${dateTime.date} ${dateTime.time}</a>
                     </div>
                     </li>
@@ -951,6 +956,7 @@
                 $('#chat-box').append(`
                     <li class="sender">
                     <div>
+                        <b>${this.senderName}: </b><br>
                         <img src="${url}" alt="Image" />
                         <a style="font-size: 10px;">${dateTime.date} ${dateTime.time}</a>
                     </div>
@@ -992,6 +998,7 @@
                 $('#chat-box').append(`
                     <li class="sender">
                     <div>
+                        <b>${this.senderName}: </b><br>
                         <a href="${url}" target="_blank">${fileName}</a>
                         <a style="font-size: 10px;">${dateTime.date} ${dateTime.time}</a>
                     </div>
@@ -1019,11 +1026,12 @@
                 $('#chat-box').append(`
                     <li class="sender">
                         <div>
+                            <b>${this.senderName}: </b>
                             <b></b> sent a video<br>
                             <iframe width="400" height="300"
                                     src="https://www.youtube.com/embed/${id}"
                                     frameborder="0"
-                                    allowfullscreen></iframe>
+                                    allowfullscreen></iframe><br>
                             <a style="font-size: 10px;">${dateTime.date} ${dateTime.time}</a>
                         </div>
                     </li>
@@ -1050,10 +1058,10 @@
                 $('#chat-box').append(`
                     <li class="sender">
                     <div>
-                        <p>File: ${fileName}</p>
+                        <b>${this.senderName}: </b><p>File: ${fileName}</p><br>
                         <audio controls>
                         <source src="${url}" type="audio/mpeg">
-                        </audio>
+                        </audio><br>
                         <p style="font-size: 10px;">${dateTime.date} ${dateTime.time}</p>
                     </div>
                     </li>
@@ -1490,10 +1498,10 @@
         #chat-window {
         position: absolute;
         left: 300px;
-        top: 300px;
+        top: 200px;
         width: 700px;
         background: white;
-        height: 400px;
+        height: 500px;
     }
 
     #chat-box li {
@@ -1510,14 +1518,14 @@
 
     #chat-box li.receiver div {
         background-color: #80deea;
-        display: inline-flex;
+        display: inline-block;
         padding: 3px;
         border-radius: 5px;
     }
 
     #chat-box li.sender div {
         background-color: #aed581;
-        display: inline-flex;
+        display: inline-block;
         padding: 3px;
         border-radius: 5px;
     }
@@ -1534,7 +1542,7 @@
         display: flex;
         flex-direction: column;
         box-shadow: rgba(50, 50, 105, 0.15) 0px 2px 5px 0px, rgba(0, 0, 0, 0.05) 0px 1px 1px 0px;
-        height: 400px;
+        height: 500px;
     }
 
     #chat-form {
@@ -1565,6 +1573,10 @@
         border-radius: 3px;
         background-color: #ccc;
         font-size: 1.5rem;
+    }
+
+    #closeChat{
+        background: #000;
     }
 
     #chat-body {
@@ -1665,8 +1677,8 @@
 
     #camera {
         position: absolute;
-        right: 18%;
-        bottom: 6%;
+        right: 15%;
+        bottom: 5%;
     }
 
     #camera video {
