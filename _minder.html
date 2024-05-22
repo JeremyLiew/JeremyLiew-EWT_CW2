@@ -44,7 +44,9 @@
                 </tr>
                 <tr v-for="student in nearbyStudents" :key="student.id">
                     <td class="student-name">{{ student.name }}</td>
-                    <td style="text-align: center;"><img class="chat-icon" @click="chat" src="image/chat.png" alt=""></td>
+                    <td style="text-align: center;"><img class="chat-icon" @click="chat(student.email)"
+                            src="image/chat.png" alt="">
+                    </td>
                 </tr>
                 <tr v-if="nearbyStudents.length == 0">
                     <td colspan="2" class="no-users">No nearby users found</td>
@@ -64,17 +66,14 @@
 
                     <div id="chat-body">
                         <div style="flex: 1"></div>
-                        <ul id="chat"></ul>
+                        <ul style="list-style: none;" id="chat-box"></ul>
                     </div>
 
                     <div id="chat-footer">
-                        <form id="chat-form" autocomplete="off">
-                            <button type="button" id="bold" @click="toggleBold">B</button>
-                            <button type="button" id="italic" @click="toggleItalic">I</button>
-                            <button type="button" id="underline" @click="toggleUnderline">U</button>
-                            <input type="text" id="message" placeholder="Enter Message" autofocus>
+                        <form @keydown.enter.prevent="sendMessage" id="chat-form" autocomplete="off">
+                            <input v-model="message" type="text" id="message" placeholder="Enter Message" autofocus ref="message">
                             <div class="emoji-picker">
-                                <select id="emoji-select">
+                                <select id="emoji-select" @click="insertEmoji">
                                     <option value="😀">😀</option>
                                     <option value="😊">😊</option>
                                     <option value="😎">😎</option>
@@ -137,6 +136,7 @@
 </template>
 
 <script>
+
     app.component({
         data: () => ({
             player: null,
@@ -148,19 +148,6 @@
             acc: 0,
             markers: [],
             students: [],
-
-            //chat data
-            showChat: false,
-
-            message: '',
-            documentFile: '',
-            youtubeLink: '',
-            image: '',
-            emoji: '',
-            dateAndTime: '',
-            mp3: '',
-            senderEmail: '',
-            receiveEmail: '',
 
             nearbyStudents: [],
 
@@ -180,12 +167,193 @@
             routeToUser: false,
 
             enableShowRoute: false,
+
+            //chat data
+            showChat: false,
+
+            historyData: [],
+            message: '',
+            documentFile: '',
+            youtubeLink: '',
+            image: '',
+            date: '',
+            time: '',
+            mp3: '',
+
+            senderEmail: '',
+            receiverEmail: '',
+
+            submissionCount: 0,
+            lastSubmissionTime: null,
+            timerReset: null
         }),
 
         methods: {
-            chat(email) {
+
+            chat(email) { 
                 this.showChat = !this.showChat
+                this.senderEmail = this.$root.user.email
+                this.receiverEmail = email
+
+                DB.collection('chat')
+                    .where('senderEmail', '==', this.senderEmail)
+                    .where('receiverEmail', '==', this.receiverEmail)
+                    .get()
+                    .then(querySnapshot => {
+                        querySnapshot.forEach(doc => {
+                            const data = doc.data();
+                            this.historyData.push({
+                                message: data.message,
+                                senderEmail: data.senderEmail,
+                                receiverEmail: data.receiverEmail,
+                                date: data.date,
+                                time: data.time
+                            });
+                        });
+                    });
+
+                // get history
+                // cannot restore the message but already get the data
+                for (let i = 0; i < this.historyData.length; i++) {
+                    const history = this.historyData[i];
+                    if (history.senderEmail == this.senderEmail) {
+                        alert(history.message)
+                        $('#chat-box').append(`
+                            <li class="sender">
+                                <div>
+                                    <b></b> 
+                                    <a>${history.message}</a>
+                                    <a style="font-size: 10px;">${history.date} ${history.time}</a>
+                                </div>
+                            </li>
+                        `);
+                    }
+                    else {
+                        $('#chat-box').append(`
+                            <li class="receiver">
+                                <div>
+                                    <b></b> 
+                                    <a>${history.message}</a>
+                                    <a style="font-size: 10px;">${history.date} ${history.time}</a>
+                                </div>
+                            </li>
+                        `);
+                    }
+                };
+
             },
+
+            sendMessage() {
+                let dateTime = this.generateDateTime();
+                let message = this.message;
+
+                let badwords = /fuck|sohai|jibai/gi;
+                let newMessage = message.replace(badwords, '******');
+
+                $('#chat-box').append(`
+                <li class="sender">
+                    <div>
+                        <b></b> 
+                        <a>${newMessage}</a>
+                        <a style="font-size: 10px;">${dateTime.date} ${dateTime.time}</a>
+                    </div>
+                </li>
+            `);
+
+                const data = {
+                    message: newMessage,
+                    senderEmail: this.$root.user.email,
+                    receiverEmail: this.receiverEmail,
+                    date: dateTime.date,
+                    time: dateTime.time,
+                };
+                this.message = '';
+                // Save data to Firestore
+                CHATS.doc().set(data);
+
+                this.handleKeypress();
+            },
+
+            resetSubmissionCount() {
+                this.submissionCount = 0;
+            },
+
+            handleKeypress() { 
+                const currentTime = new Date().getTime();
+                if (this.lastSubmissionTime && currentTime - this.lastSubmissionTime < 10000) {
+                    this.submissionCount++;
+                } else {
+                    this.submissionCount = 1; // Reset count if time window has passed
+                }
+                this.lastSubmissionTime = currentTime;
+
+
+                if (this.submissionCount >= 5) {
+                    alert("You've submitted too frequently. Please wait for 10 seconds before submitting again.");
+                    this.$refs.message.disabled = true;
+
+                    setTimeout(() => {
+                        this.$refs.message.disabled = false;
+                        this.resetSubmissionCount();
+                    }, 10000);
+                } else {
+                    this.$refs.message.disabled = false;
+                }
+
+                clearTimeout(this.timerReset); 
+                this.timerReset = setTimeout(() => {
+                    this.resetSubmissionCount();
+                }, 10000);
+            },
+
+            insertEmoji(event) { //cannot choose the same emoji
+                const emoji = event.target.value;
+                const textBox = this.$refs.message;
+                const startPos = textBox.selectionStart;
+                const endPos = textBox.selectionEnd;
+                const text = this.message;
+                this.message = text.substring(0, startPos) + emoji + text.substring(endPos);
+                this.$nextTick(() => {
+                    textBox.focus();
+                    textBox.setSelectionRange(startPos + emoji.length, startPos + emoji.length);
+                });
+            },
+
+            generateDateTime() {
+            const date = new Date();
+            const dateFormat = new Intl.DateTimeFormat('en-US', { dateStyle: 'short' });
+            const formattedDate = dateFormat.format(date).toString();
+
+            const timeFormat = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit' });
+            const formattedTime = timeFormat.format(date).toString();
+
+            return {
+                date: formattedDate,
+                time: formattedTime
+            };
+        },
+
+
+        calculateAndDisplayRoute(destination, type) {
+            const request = {
+                origin: new google.maps.LatLng(this.lat, this.lng),
+                destination: destination,
+                travelMode: google.maps.TravelMode.DRIVING,
+            };
+
+            this.directionsService.route(request, (result, status) => {
+                if (status == google.maps.DirectionsStatus.OK) {
+                    this.directionsRenderer.setDirections(result);
+                } else {
+                    console.error('Directions request failed due to ' + status);
+                }
+            });
+        },
+
+        displayRouteToUser(user) {
+            try {
+                const otherUserLocation = new gm.LatLng(user.latitude, user.longitude);
+
             trackProfileView(profileEmail) {
                 const profileViewRef = STUDENTS.doc(profileEmail);
 
@@ -202,7 +370,7 @@
             calculateAndDisplayRoute(destination, type) {
                 const request = {
                     origin: new google.maps.LatLng(this.lat, this.lng),
-                    destination: destination,
+                    destination: otherUserLocation,
                     travelMode: google.maps.TravelMode.DRIVING,
                 };
 
@@ -213,347 +381,310 @@
                         console.error('Directions request failed due to ' + status);
                     }
                 });
-            },
+            } catch (error) {
+                console.error('Error displaying route:', error);
+            }
+        },
 
-            displayRouteToUser(user) {
-                try {
-                    const otherUserLocation = new gm.LatLng(user.latitude, user.longitude);
+        toggleRouteToCafe() {
+            this.routeToCafe = !this.routeToCafe;
+            if (this.routeToCafe) {
+                this.routeToRestaurant = false;
+            }
+        },
 
-                    const request = {
-                        origin: new google.maps.LatLng(this.lat, this.lng),
-                        destination: otherUserLocation,
-                        travelMode: google.maps.TravelMode.DRIVING,
-                    };
+        toggleRouteToRestaurant() {
+            this.routeToRestaurant = !this.routeToRestaurant;
+            if (this.routeToRestaurant) {
+                this.routeToCafe = false;
+            }
+        },
+        findNearbyCafes() {
+            this.showCafes = true;
+            const location = new gm.LatLng(this.lat, this.lng);
+            const request = {
+                location: location,
+                radius: this.meter,
+                type: ['cafe']
+            };
 
-                    this.directionsService.route(request, (result, status) => {
-                        if (status == google.maps.DirectionsStatus.OK) {
-                            this.directionsRenderer.setDirections(result);
-                        } else {
-                            console.error('Directions request failed due to ' + status);
-                        }
-                    });
-                } catch (error) {
-                    console.error('Error displaying route:', error);
-                }
-            },
-
-            toggleRouteToCafe() {
-                this.routeToCafe = !this.routeToCafe;
-                if (this.routeToCafe) {
-                    this.routeToRestaurant = false;
-                }
-            },
-
-            toggleRouteToRestaurant() {
-                this.routeToRestaurant = !this.routeToRestaurant;
-                if (this.routeToRestaurant) {
-                    this.routeToCafe = false;
-                }
-            },
-            findNearbyCafes() {
-                this.showCafes = true;
-                const location = new gm.LatLng(this.lat, this.lng);
-                const request = {
-                    location: location,
-                    radius: this.meter,
-                    type: ['cafe']
-                };
-
-                this.placesService.nearbySearch(request, (results, status) => {
-                    if (status === google.maps.places.PlacesServiceStatus.OK) {
-                        this.cafes = results;
-                        this.plotCafeMarkers();
-                    } else {
-                        console.error('PlacesService failed due to: ' + status);
-                    }
-                });
-            },
-            plotCafeMarkers() {
-                this.clearCafeMarkers();
-                for (const cafe of this.cafes) {
-                    const position = new gm.LatLng(cafe.geometry.location.lat(), cafe.geometry.location.lng());
-                    const marker = new gm.Marker({
-                        map: map,
-                        position: position,
-                        icon: {
-                            url: 'image/coffee.png',
-                            scaledSize: new google.maps.Size(34, 34),
-                        },
-                    });
-
-                    const info = new gm.InfoWindow();
-
-                    marker.addListener('click', () => {
-                        if (!this.enableShowRoute) {
-                            this.placesService.getDetails({ placeId: cafe.place_id }, (place, status) => {
-                                if (status === google.maps.places.PlacesServiceStatus.OK) {
-                                    const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
-                                    const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
-
-                                    const distance = google.maps.geometry.spherical.computeDistanceBetween(
-                                        new google.maps.LatLng(this.lat, this.lng),
-                                        position
-                                    );
-                                    const distanceKm = (distance / 1000).toFixed(2);
-
-                                    info.setContent(`
-                                    <div id="info" style="text-align: center;">
-                                        <div style="position: relative; display: inline-block;">
-                                            <img src="${place.photos ? place.photos[0].getUrl({ maxWidth: 200, maxHeight: 200 }) : 'image/no-image.png'}"
-                                                style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #FF0000; display: block; margin: 0 auto;">
-                                        </div>
-                                        <div style="margin-top: 10px; font-size: 14px;">
-                                            <b>${place.name}</b>
-                                        </div>
-                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
-                                            ${place.vicinity}
-                                        </div>
-                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
-                                            ${place.opening_hours ? 'Open now: ' + (place.opening_hours.isOpen() ? '<span style="color:green">Yes</span>' : '<span style="color:red">No</span>') : '-'}
-                                        </div>
-                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
-                                            ${rating} <img style="width:12px" src="image/star.png">
-                                        </div>
-                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
-                                            Distance: ${distanceKm} km
-                                        </div>
-                                        <div style="margin-top: 10px; font-size: 12px; color: gray;">
-                                            ${hours}
-                                        </div>
-                                    </div>
-                                `);
-                                    info.open(map, marker);
-                                }
-                            });
-                        }
-                    });
-
-                    marker.addListener('click', () => {
-                        if (this.enableShowRoute) {
-                            if (this.routeToCafe) {
-                                this.routeToCafe = false;
-                                this.directionsRenderer.setDirections({ routes: [] });
-                            } else {
-                                this.routeToCafe = true;
-                                this.calculateAndDisplayRoute(position, 'cafe');
-                            }
-                        }
-                    });
-
-                    this.cafeMarkers.push(marker);
-                }
-            },
-
-            findNearbyRestaurants() {
-                this.showRestaurants = true;
-                const location = new gm.LatLng(this.lat, this.lng);
-                const request = {
-                    location: location,
-                    radius: this.meter,
-                    type: ['restaurant']
-                };
-
-                this.placesService.nearbySearch(request, (results, status) => {
-                    if (status === google.maps.places.PlacesServiceStatus.OK) {
-                        this.restaurants = results;
-                        this.plotRestaurantMarkers();
-                    } else {
-                        console.error('PlacesService failed due to: ' + status);
-                    }
-                });
-            },
-            plotRestaurantMarkers() {
-                this.clearRestaurantMarkers();
-                for (const restaurant of this.restaurants) {
-                    const position = new gm.LatLng(restaurant.geometry.location.lat(), restaurant.geometry.location.lng());
-                    const marker = new gm.Marker({
-                        map: map,
-                        position: position,
-                        icon: {
-                            url: 'image/restaurant.png',
-                            scaledSize: new google.maps.Size(34, 34),
-                        },
-                    });
-
-                    const info = new gm.InfoWindow();
-
-                    marker.addListener('click', () => {
-                        if (!this.enableShowRoute) {
-                            this.placesService.getDetails({ placeId: restaurant.place_id }, (place, status) => {
-                                if (status === google.maps.places.PlacesServiceStatus.OK) {
-                                    const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
-                                    const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
-
-                                    const distance = google.maps.geometry.spherical.computeDistanceBetween(
-                                        new google.maps.LatLng(this.lat, this.lng),
-                                        position
-                                    );
-                                    const distanceKm = (distance / 1000).toFixed(2);
-
-                                    info.setContent(`
-                                    <div id="info" style="text-align: center;">
-                                        <div style="position: relative; display: inline-block;">
-                                            <img src="${place.photos ? place.photos[0].getUrl({ maxWidth: 200, maxHeight: 200 }) : 'image/no-image.png'}"
-                                                style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #FF0000; display: block; margin: 0 auto;">
-                                        </div>
-                                        <div style="margin-top: 10px; font-size: 14px;">
-                                            <b>${place.name}</b>
-                                        </div>
-                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
-                                            ${place.vicinity}
-                                        </div>
-                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
-                                            ${place.opening_hours ? 'Open now: ' + (place.opening_hours.isOpen() ? '<span style="color:green">Yes</span>' : '<span style="color:red">No</span>') : '-'}
-                                        </div>
-                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
-                                            ${rating} <img style="width:12px" src="image/star.png">
-                                        </div>
-                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
-                                            Distance: ${distanceKm} km
-                                        </div>
-                                        <div style="margin-top: 10px; font-size: 12px; color: gray;">
-                                            ${hours}
-                                        </div>
-                                    </div>
-                                `);
-                                    info.open(map, marker);
-                                }
-                            });
-                        }
-                    });
-
-                    marker.addListener('click', () => {
-                        if (this.enableShowRoute) {
-                            if (this.routeToRestaurant) {
-                                this.routeToRestaurant = false;
-                                this.directionsRenderer.setDirections({ routes: [] });
-                            } else {
-                                this.routeToRestaurant = true;
-                                this.calculateAndDisplayRoute(position, 'restaurant');
-                            }
-                        }
-                    });
-
-                    this.restaurantMarkers.push(marker);
-                }
-            },
-            panToCenter() {
-                const center = new gm.LatLng(this.lat, this.lng);
-                map.panTo(center);
-            },
-            change(event, field) {
-                const newValue = event.target.value;
-
-                if (field === 'meter') {
-                    this.circle.setRadius(parseInt(newValue));
-                    this.retrieveUsers()
-
-                } else if (field === 'gender') {
-                    this.retrieveUsers();
-                }
-            },
-            getLocation() {
-                const options = {
-                    enableHighAccuracy: true,
-                };
-
-                navigator.geolocation.getCurrentPosition(
-                    this.success,
-                    this.fail,
-                    options
-                );
-            },
-            success(position) {
-                this.lat = position.coords.latitude;
-                this.lng = position.coords.longitude;
-                this.acc = position.coords.accuracy;
-
-                const p = new gm.LatLng(this.lat, this.lng);
-                this.player.setPosition(p);
-                map.panTo(p);
-
-                if (!this.circle) {
-                    this.circle = new gm.Circle({
-                        map: map,
-                        center: p,
-                        radius: parseInt(this.meter) || 0,
-                        fillColor: '#AA0000',
-                        fillOpacity: 0.35,
-                        strokeColor: '#AA0000',
-                        strokeOpacity: 0.8,
-                        strokeWeight: 2,
-                    });
+            this.placesService.nearbySearch(request, (results, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    this.cafes = results;
+                    this.plotCafeMarkers();
                 } else {
-                    this.circle.setCenter(p);
+                    console.error('PlacesService failed due to: ' + status);
                 }
+            });
+        },
+        plotCafeMarkers() {
+            this.clearCafeMarkers();
+            for (const cafe of this.cafes) {
+                const position = new gm.LatLng(cafe.geometry.location.lat(), cafe.geometry.location.lng());
+                const marker = new gm.Marker({
+                    map: map,
+                    position: position,
+                    icon: {
+                        url: 'image/coffee.png',
+                        scaledSize: new google.maps.Size(34, 34),
+                    },
+                });
 
-                this.saveCoordToCloud();
-            },
-            fail(error) {
-                alert(`ERROR: (${error.code}) ${error.message}`);
-            },
-            saveCoordToCloud() {
-                let payload = {
-                    latitude: this.lat,
-                    longitude: this.lng,
-                    accuracy: this.acc
-                }
+                const info = new gm.InfoWindow();
 
-                STUDENTS.doc(this.$root.user.email).set(payload, { merge: true });
-            },
+                marker.addListener('click', () => {
+                    if (!this.enableShowRoute) {
+                        this.placesService.getDetails({ placeId: cafe.place_id }, (place, status) => {
+                            if (status === google.maps.places.PlacesServiceStatus.OK) {
+                                const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
+                                const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
 
-            async retrieveUsers() {
-                try {
-                    this.students = [];
-                    let query = STUDENTS;
-                    if (this.gender !== 'all') {
-                        query = query.where('gender', '==', this.gender);
-                    }
-                    const querySnapshot = await query.get();
+                                const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                                    new google.maps.LatLng(this.lat, this.lng),
+                                    position
+                                );
+                                const distanceKm = (distance / 1000).toFixed(2);
 
-                    if (this.player) {
-                        const playerPosition = this.player.getPosition();
-                        querySnapshot.forEach(doc => {
-                            const student = doc.data();
-                            if (doc.id !== this.$root.user.email.toLowerCase()) {
-                                const studentPosition = new gm.LatLng(student.latitude, student.longitude);
-                                const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, playerPosition);
-                                student.distance = distance
-                                this.students.push(student);
+                                info.setContent(`
+                                    <div id="info" style="text-align: center;">
+                                        <div style="position: relative; display: inline-block;">
+                                            <img src="${place.photos ? place.photos[0].getUrl({ maxWidth: 200, maxHeight: 200 }) : 'image/no-image.png'}"
+                                                style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #FF0000; display: block; margin: 0 auto;">
+                                        </div>
+                                        <div style="margin-top: 10px; font-size: 14px;">
+                                            <b>${place.name}</b>
+                                        </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            ${place.vicinity}
+                                        </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            ${place.opening_hours ? 'Open now: ' + (place.opening_hours.isOpen() ? '<span style="color:green">Yes</span>' : '<span style="color:red">No</span>') : '-'}
+                                        </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            ${rating} <img style="width:12px" src="image/star.png">
+                                        </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            Distance: ${distanceKm} km
+                                        </div>
+                                        <div style="margin-top: 10px; font-size: 12px; color: gray;">
+                                            ${hours}
+                                        </div>
+                                    </div>
+                                `);
+                                info.open(map, marker);
                             }
                         });
+                    }
+                });
 
-                        this.nearbyStudents = this.students.filter(student => {
+                marker.addListener('click', () => {
+                    if (this.enableShowRoute) {
+                        if (this.routeToCafe) {
+                            this.routeToCafe = false;
+                            this.directionsRenderer.setDirections({ routes: [] });
+                        } else {
+                            this.routeToCafe = true;
+                            this.calculateAndDisplayRoute(position, 'cafe');
+                        }
+                    }
+                });
+
+                this.cafeMarkers.push(marker);
+            }
+        },
+
+        findNearbyRestaurants() {
+            this.showRestaurants = true;
+            const location = new gm.LatLng(this.lat, this.lng);
+            const request = {
+                location: location,
+                radius: this.meter,
+                type: ['restaurant']
+            };
+
+            this.placesService.nearbySearch(request, (results, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    this.restaurants = results;
+                    this.plotRestaurantMarkers();
+                } else {
+                    console.error('PlacesService failed due to: ' + status);
+                }
+            });
+        },
+        plotRestaurantMarkers() {
+            this.clearRestaurantMarkers();
+            for (const restaurant of this.restaurants) {
+                const position = new gm.LatLng(restaurant.geometry.location.lat(), restaurant.geometry.location.lng());
+                const marker = new gm.Marker({
+                    map: map,
+                    position: position,
+                    icon: {
+                        url: 'image/restaurant.png',
+                        scaledSize: new google.maps.Size(34, 34),
+                    },
+                });
+
+                const info = new gm.InfoWindow();
+
+                marker.addListener('click', () => {
+                    if (!this.enableShowRoute) {
+                        this.placesService.getDetails({ placeId: restaurant.place_id }, (place, status) => {
+                            if (status === google.maps.places.PlacesServiceStatus.OK) {
+                                const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
+                                const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
+
+                                const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                                    new google.maps.LatLng(this.lat, this.lng),
+                                    position
+                                );
+                                const distanceKm = (distance / 1000).toFixed(2);
+
+                                info.setContent(`
+                                    <div id="info" style="text-align: center;">
+                                        <div style="position: relative; display: inline-block;">
+                                            <img src="${place.photos ? place.photos[0].getUrl({ maxWidth: 200, maxHeight: 200 }) : 'image/no-image.png'}"
+                                                style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #FF0000; display: block; margin: 0 auto;">
+                                        </div>
+                                        <div style="margin-top: 10px; font-size: 14px;">
+                                            <b>${place.name}</b>
+                                        </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            ${place.vicinity}
+                                        </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            ${place.opening_hours ? 'Open now: ' + (place.opening_hours.isOpen() ? '<span style="color:green">Yes</span>' : '<span style="color:red">No</span>') : '-'}
+                                        </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            ${rating} <img style="width:12px" src="image/star.png">
+                                        </div>
+                                        <div style="margin-top: 5px; font-size: 12px; color: gray;">
+                                            Distance: ${distanceKm} km
+                                        </div>
+                                        <div style="margin-top: 10px; font-size: 12px; color: gray;">
+                                            ${hours}
+                                        </div>
+                                    </div>
+                                `);
+                                info.open(map, marker);
+                            }
+                        });
+                    }
+                });
+
+                marker.addListener('click', () => {
+                    if (this.enableShowRoute) {
+                        if (this.routeToRestaurant) {
+                            this.routeToRestaurant = false;
+                            this.directionsRenderer.setDirections({ routes: [] });
+                        } else {
+                            this.routeToRestaurant = true;
+                            this.calculateAndDisplayRoute(position, 'restaurant');
+                        }
+                    }
+                });
+
+                this.restaurantMarkers.push(marker);
+            }
+        },
+        panToCenter() {
+            const center = new gm.LatLng(this.lat, this.lng);
+            map.panTo(center);
+        },
+        change(event, field) {
+            const newValue = event.target.value;
+
+            if (field === 'meter') {
+                this.circle.setRadius(parseInt(newValue));
+                this.retrieveUsers()
+
+            } else if (field === 'gender') {
+                this.retrieveUsers();
+            }
+        },
+        getLocation() {
+            const options = {
+                enableHighAccuracy: true,
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                this.success,
+                this.fail,
+                options
+            );
+        },
+        success(position) {
+            this.lat = position.coords.latitude;
+            this.lng = position.coords.longitude;
+            this.acc = position.coords.accuracy;
+
+            const p = new gm.LatLng(this.lat, this.lng);
+            this.player.setPosition(p);
+            map.panTo(p);
+
+            if (!this.circle) {
+                this.circle = new gm.Circle({
+                    map: map,
+                    center: p,
+                    radius: parseInt(this.meter) || 0,
+                    fillColor: '#AA0000',
+                    fillOpacity: 0.35,
+                    strokeColor: '#AA0000',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                });
+            } else {
+                this.circle.setCenter(p);
+            }
+
+            this.saveCoordToCloud();
+        },
+        fail(error) {
+            alert(`ERROR: (${error.code}) ${error.message}`);
+        },
+        saveCoordToCloud() {
+            let payload = {
+                latitude: this.lat,
+                longitude: this.lng,
+                accuracy: this.acc
+            }
+
+            STUDENTS.doc(this.$root.user.email).set(payload, { merge: true });
+        },
+
+        async retrieveUsers() {
+            try {
+                this.students = [];
+                let query = STUDENTS;
+                if (this.gender !== 'all') {
+                    query = query.where('gender', '==', this.gender);
+                }
+                const querySnapshot = await query.get();
+
+                if (this.player) {
+                    const playerPosition = this.player.getPosition();
+                    querySnapshot.forEach(doc => {
+                        const student = doc.data();
+                        if (doc.id !== this.$root.user.email.toLowerCase()) {
                             const studentPosition = new gm.LatLng(student.latitude, student.longitude);
                             const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, playerPosition);
-                            // Convert distance from meters to kilometers and check if it's within the specified radius
-                            return distance / 1000 <= parseInt(this.meter) / 1000;
-                        });
-
-                        this.plotMarkers();
-                    }
-                } catch (error) {
-                    console.error('Error retrieving users:', error);
-                }
-            },
-
-            plotMarkers() {
-                this.clearUserMarkers();
-                for (const student of this.students) {
-                    const position = new gm.LatLng(student.latitude, student.longitude);
-
-                    const marker = new gm.Marker({
-                        map,
-                        position,
-                        icon: {
-                            url: student.photo || 'image/photo.png',
-                            scaledSize: new gm.Size(34, 34),
-                        },
+                            student.distance = distance
+                            this.students.push(student);
+                        }
                     });
 
-                    const info = new gm.InfoWindow();
+                    this.nearbyStudents = this.students.filter(student => {
+                        const studentPosition = new gm.LatLng(student.latitude, student.longitude);
+                        const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, playerPosition);
+                        // Convert distance from meters to kilometers and check if it's within the specified radius
+                        return distance / 1000 <= parseInt(this.meter) / 1000;
+                    });
 
-                    let timeout = null;
+                    this.plotMarkers();
+                }
+            } catch (error) {
+                console.error('Error retrieving users:', error);
+            }
+        },
 
                     marker.addListener('click', e => {
                         if (!this.enableShowRoute) {
@@ -589,6 +720,28 @@
 
                             info.setContent(`
                                 <div id="info" style="text-align: center;">
+        plotMarkers() {
+            this.clearUserMarkers();
+            for (const student of this.students) {
+                const position = new gm.LatLng(student.latitude, student.longitude);
+
+                const marker = new gm.Marker({
+                    map,
+                    position,
+                    icon: {
+                        url: student.photo || 'image/photo.png',
+                        scaledSize: new gm.Size(34, 34),
+                    },
+                });
+
+                const info = new gm.InfoWindow();
+
+                let timeout = null;
+
+                marker.addListener('click', e => {
+                    if (!this.enableShowRoute) {
+                        info.setContent(`
+                            <div id="info" style="text-align: center;">
                                     <div style="position: relative; display: inline-block;">
                                         <img src="${student.photo}"
                                             style="
@@ -611,109 +764,112 @@
                                     </div>
                                 </div>
                             `);
-                            info.open(map, marker);
+                        info.open(map, marker);
 
                             this.trackProfileView(student.email)
 
                             clearTimeout(timeout);
                             timeout = setTimeout(_ => info.close(), 3000);
+                        clearTimeout(timeout);
+                        timeout = setTimeout(_ => info.close(), 3000);
+                    }
+                });
+
+                marker.addListener('click', () => {
+                    if (this.enableShowRoute) {
+                        if (this.routeToUser) {
+                            this.routeToUser = false;
+                            this.directionsRenderer.setDirections({ routes: [] });
+                        } else {
+                            this.routeToUser = true;
+                            this.displayRouteToUser(student)
                         }
-                    });
+                    }
+                });
 
-                    marker.addListener('click', () => {
-                        if (this.enableShowRoute) {
-                            if (this.routeToUser) {
-                                this.routeToUser = false;
-                                this.directionsRenderer.setDirections({ routes: [] });
-                            } else {
-                                this.routeToUser = true;
-                                this.displayRouteToUser(student)
-                            }
-                        }
-                    });
-
-                    this.markers.push(marker);
-                }
-            },
-
-            clearUserMarkers() {
-                for (let i = 0; i < this.markers.length; i++) {
-                    this.markers[i].setVisible(false);
-                }
-                this.markers = [];
-            },
-            clearCafeMarkers() {
-                for (let i = 0; i < this.cafeMarkers.length; i++) {
-                    this.cafeMarkers[i].setVisible(false);
-                }
-                this.cafeMarkers = [];
-            },
-            clearRestaurantMarkers() {
-                for (let i = 0; i < this.restaurantMarkers.length; i++) {
-                    this.restaurantMarkers[i].setVisible(false);
-                }
-                this.restaurantMarkers = [];
-            },
+                this.markers.push(marker);
+            }
         },
+
+        clearUserMarkers() {
+            for (let i = 0; i < this.markers.length; i++) {
+                this.markers[i].setVisible(false);
+            }
+            this.markers = [];
+        },
+        clearCafeMarkers() {
+            for (let i = 0; i < this.cafeMarkers.length; i++) {
+                this.cafeMarkers[i].setVisible(false);
+            }
+            this.cafeMarkers = [];
+        },
+        clearRestaurantMarkers() {
+            for (let i = 0; i < this.restaurantMarkers.length; i++) {
+                this.restaurantMarkers[i].setVisible(false);
+            }
+            this.restaurantMarkers = [];
+        },
+    },
 
         created() {
-            if (!this.$root.user) {
-                this.$router.push('/sign-in');
-                return;
-            } else {
-                this.$root.title = 'Welcome to Minder !';
+        if(!this.$root.user) {
+        this.$router.push('/sign-in');
+        return;
+    } else {
+        this.$root.title = 'Welcome to Minder !';
+    }
+
+    document.title = 'Minder';
+        },
+
+    mounted() {
+        map = new gm.Map(document.getElementById('map'), {
+            center,
+            zoom: 16,
+            disableDefaultUI: true,
+            disableDoubleClickZoom: true,
+            clickableIcons: false,
+            scaleControl: true,
+        });
+
+        this.placesService = new gm.places.PlacesService(map);
+
+        const panel = document.getElementById('panel');
+        panel.index = 0;
+        map.controls[gm.ControlPosition.TOP_LEFT].push(panel);
+
+        if (this.$root.user) {
+            this.player = new gm.Marker({
+                map,
+                animation: gm.Animation.DROP,
+                icon: {
+                    url: this.$root.user.photoURL || 'image/photo.png',
+                    scaledSize: new gm.Size(34, 34),
+                },
+            });
+        }
+
+        navigator.permissions.query({ name: 'geolocation' }).then(result => {
+            if (result.state == 'granted') {
+                this.getLocation();
             }
+        });
 
-            document.title = 'Minder';
-        },
+        this.directionsService = new google.maps.DirectionsService();
+        this.directionsRenderer = new google.maps.DirectionsRenderer({
+            suppressMarkers: true
+        });
+        this.directionsRenderer.setMap(map);
 
-        mounted() {
-            map = new gm.Map(document.getElementById('map'), {
-                center,
-                zoom: 16,
-                disableDefaultUI: true,
-                disableDoubleClickZoom: true,
-                clickableIcons: false,
-                scaleControl: true,
-            });
+        this.retrieveUsers();
+    },
 
-            this.placesService = new gm.places.PlacesService(map);
-
-            const panel = document.getElementById('panel');
-            panel.index = 0;
-            map.controls[gm.ControlPosition.TOP_LEFT].push(panel);
-
-            if (this.$root.user) {
-                this.player = new gm.Marker({
-                    map,
-                    animation: gm.Animation.DROP,
-                    icon: {
-                        url: this.$root.user.photoURL || 'image/photo.png',
-                        scaledSize: new gm.Size(34, 34),
-                    },
-                });
-            }
-
-            navigator.permissions.query({ name: 'geolocation' }).then(result => {
-                if (result.state == 'granted') {
-                    this.getLocation();
-                }
-            });
-
-            this.directionsService = new google.maps.DirectionsService();
-            this.directionsRenderer = new google.maps.DirectionsRenderer({
-                suppressMarkers: true
-            });
-            this.directionsRenderer.setMap(map);
-
-            this.retrieveUsers();
-        },
-
-        unmounted() {
-            map = null;
-        },
+    unmounted() {
+        map = null;
+    },
     });
 </script>
+
 <style>
     :root {
         display: grid;
@@ -740,6 +896,40 @@
         height: 400px;
     }
 
+    #chat-box li {
+        margin-bottom: 3px;
+    }
+
+    #chat-box li.sender {
+        text-align: right;
+    }
+
+    #chat-box li.receiver {
+        text-align: left;
+    }
+
+    #chat-box li.receiver div {
+        background-color: #80deea;
+        display: inline-flex;
+        padding: 3px;
+        border-radius: 5px;
+    }
+
+    #chat-box li.sender div {
+        background-color: #aed581;
+        display: inline-flex;
+        padding: 3px;
+        border-radius: 5px;
+    }
+
+    #chat-box li.sender div a {
+        padding-right: 10px;
+    }
+
+    #chat-box li.receiver div a {
+        padding-right: 10px;
+    }
+
     #chat-lobby {
         display: flex;
         flex-direction: column;
@@ -747,7 +937,7 @@
         height: 400px;
     }
 
-    #chat-form{
+    #chat-form {
         display: flex;
         justify-content: center;
     }
