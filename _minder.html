@@ -334,27 +334,7 @@
         },
 
 
-        calculateAndDisplayRoute(destination, type) {
-            const request = {
-                origin: new google.maps.LatLng(this.lat, this.lng),
-                destination: destination,
-                travelMode: google.maps.TravelMode.DRIVING,
-            };
-
-            this.directionsService.route(request, (result, status) => {
-                if (status == google.maps.DirectionsStatus.OK) {
-                    this.directionsRenderer.setDirections(result);
-                } else {
-                    console.error('Directions request failed due to ' + status);
-                }
-            });
-        },
-
-        displayRouteToUser(user) {
-            try {
-                const otherUserLocation = new gm.LatLng(user.latitude, user.longitude);
-
-            trackProfileView(profileEmail) {
+        trackProfileView(profileEmail) {
                 const profileViewRef = STUDENTS.doc(profileEmail);
 
                 profileViewRef.get().then(doc => {
@@ -370,7 +350,7 @@
             calculateAndDisplayRoute(destination, type) {
                 const request = {
                     origin: new google.maps.LatLng(this.lat, this.lng),
-                    destination: otherUserLocation,
+                    destination: destination,
                     travelMode: google.maps.TravelMode.DRIVING,
                 };
 
@@ -381,71 +361,90 @@
                         console.error('Directions request failed due to ' + status);
                     }
                 });
-            } catch (error) {
-                console.error('Error displaying route:', error);
-            }
-        },
+            },
 
-        toggleRouteToCafe() {
-            this.routeToCafe = !this.routeToCafe;
-            if (this.routeToCafe) {
-                this.routeToRestaurant = false;
-            }
-        },
+            displayRouteToUser(user) {
+                try {
+                    const otherUserLocation = new gm.LatLng(user.latitude, user.longitude);
 
-        toggleRouteToRestaurant() {
-            this.routeToRestaurant = !this.routeToRestaurant;
-            if (this.routeToRestaurant) {
-                this.routeToCafe = false;
-            }
-        },
-        findNearbyCafes() {
-            this.showCafes = true;
-            const location = new gm.LatLng(this.lat, this.lng);
-            const request = {
-                location: location,
-                radius: this.meter,
-                type: ['cafe']
-            };
+                    const request = {
+                        origin: new google.maps.LatLng(this.lat, this.lng),
+                        destination: otherUserLocation,
+                        travelMode: google.maps.TravelMode.DRIVING,
+                    };
 
-            this.placesService.nearbySearch(request, (results, status) => {
-                if (status === google.maps.places.PlacesServiceStatus.OK) {
-                    this.cafes = results;
-                    this.plotCafeMarkers();
-                } else {
-                    console.error('PlacesService failed due to: ' + status);
+                    this.directionsService.route(request, (result, status) => {
+                        if (status == google.maps.DirectionsStatus.OK) {
+                            this.directionsRenderer.setDirections(result);
+                        } else {
+                            console.error('Directions request failed due to ' + status);
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error displaying route:', error);
                 }
-            });
-        },
-        plotCafeMarkers() {
-            this.clearCafeMarkers();
-            for (const cafe of this.cafes) {
-                const position = new gm.LatLng(cafe.geometry.location.lat(), cafe.geometry.location.lng());
-                const marker = new gm.Marker({
-                    map: map,
-                    position: position,
-                    icon: {
-                        url: 'image/coffee.png',
-                        scaledSize: new google.maps.Size(34, 34),
-                    },
+            },
+
+            toggleRouteToCafe() {
+                this.routeToCafe = !this.routeToCafe;
+                if (this.routeToCafe) {
+                    this.routeToRestaurant = false;
+                }
+            },
+
+            toggleRouteToRestaurant() {
+                this.routeToRestaurant = !this.routeToRestaurant;
+                if (this.routeToRestaurant) {
+                    this.routeToCafe = false;
+                }
+            },
+            findNearbyCafes() {
+                this.showCafes = true;
+                const location = new gm.LatLng(this.lat, this.lng);
+                const request = {
+                    location: location,
+                    radius: this.meter,
+                    type: ['cafe']
+                };
+
+                this.placesService.nearbySearch(request, (results, status) => {
+                    if (status === google.maps.places.PlacesServiceStatus.OK) {
+                        this.cafes = results;
+                        this.plotCafeMarkers();
+                    } else {
+                        console.error('PlacesService failed due to: ' + status);
+                    }
                 });
+            },
+            plotCafeMarkers() {
+                this.clearCafeMarkers();
+                for (const cafe of this.cafes) {
+                    const position = new gm.LatLng(cafe.geometry.location.lat(), cafe.geometry.location.lng());
+                    const marker = new gm.Marker({
+                        map: map,
+                        position: position,
+                        icon: {
+                            url: 'image/coffee.png',
+                            scaledSize: new google.maps.Size(34, 34),
+                        },
+                    });
 
-                const info = new gm.InfoWindow();
+                    const info = new gm.InfoWindow();
 
-                marker.addListener('click', () => {
-                    if (!this.enableShowRoute) {
-                        this.placesService.getDetails({ placeId: cafe.place_id }, (place, status) => {
-                            if (status === google.maps.places.PlacesServiceStatus.OK) {
-                                const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
-                                const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
+                    marker.addListener('click', () => {
+                        if (!this.enableShowRoute) {
+                            this.placesService.getDetails({ placeId: cafe.place_id }, (place, status) => {
+                                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                                    const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
+                                    const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
 
-                                const distance = google.maps.geometry.spherical.computeDistanceBetween(
-                                    new google.maps.LatLng(this.lat, this.lng),
-                                    position
-                                );
-                                const distanceKm = (distance / 1000).toFixed(2);
+                                    const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                                        new google.maps.LatLng(this.lat, this.lng),
+                                        position
+                                    );
+                                    const distanceKm = (distance / 1000).toFixed(2);
 
-                                info.setContent(`
+                                    info.setContent(`
                                     <div id="info" style="text-align: center;">
                                         <div style="position: relative; display: inline-block;">
                                             <img src="${place.photos ? place.photos[0].getUrl({ maxWidth: 200, maxHeight: 200 }) : 'image/no-image.png'}"
@@ -471,75 +470,75 @@
                                         </div>
                                     </div>
                                 `);
-                                info.open(map, marker);
-                            }
-                        });
-                    }
-                });
-
-                marker.addListener('click', () => {
-                    if (this.enableShowRoute) {
-                        if (this.routeToCafe) {
-                            this.routeToCafe = false;
-                            this.directionsRenderer.setDirections({ routes: [] });
-                        } else {
-                            this.routeToCafe = true;
-                            this.calculateAndDisplayRoute(position, 'cafe');
+                                    info.open(map, marker);
+                                }
+                            });
                         }
+                    });
+
+                    marker.addListener('click', () => {
+                        if (this.enableShowRoute) {
+                            if (this.routeToCafe) {
+                                this.routeToCafe = false;
+                                this.directionsRenderer.setDirections({ routes: [] });
+                            } else {
+                                this.routeToCafe = true;
+                                this.calculateAndDisplayRoute(position, 'cafe');
+                            }
+                        }
+                    });
+
+                    this.cafeMarkers.push(marker);
+                }
+            },
+
+            findNearbyRestaurants() {
+                this.showRestaurants = true;
+                const location = new gm.LatLng(this.lat, this.lng);
+                const request = {
+                    location: location,
+                    radius: this.meter,
+                    type: ['restaurant']
+                };
+
+                this.placesService.nearbySearch(request, (results, status) => {
+                    if (status === google.maps.places.PlacesServiceStatus.OK) {
+                        this.restaurants = results;
+                        this.plotRestaurantMarkers();
+                    } else {
+                        console.error('PlacesService failed due to: ' + status);
                     }
                 });
+            },
+            plotRestaurantMarkers() {
+                this.clearRestaurantMarkers();
+                for (const restaurant of this.restaurants) {
+                    const position = new gm.LatLng(restaurant.geometry.location.lat(), restaurant.geometry.location.lng());
+                    const marker = new gm.Marker({
+                        map: map,
+                        position: position,
+                        icon: {
+                            url: 'image/restaurant.png',
+                            scaledSize: new google.maps.Size(34, 34),
+                        },
+                    });
 
-                this.cafeMarkers.push(marker);
-            }
-        },
+                    const info = new gm.InfoWindow();
 
-        findNearbyRestaurants() {
-            this.showRestaurants = true;
-            const location = new gm.LatLng(this.lat, this.lng);
-            const request = {
-                location: location,
-                radius: this.meter,
-                type: ['restaurant']
-            };
+                    marker.addListener('click', () => {
+                        if (!this.enableShowRoute) {
+                            this.placesService.getDetails({ placeId: restaurant.place_id }, (place, status) => {
+                                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                                    const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
+                                    const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
 
-            this.placesService.nearbySearch(request, (results, status) => {
-                if (status === google.maps.places.PlacesServiceStatus.OK) {
-                    this.restaurants = results;
-                    this.plotRestaurantMarkers();
-                } else {
-                    console.error('PlacesService failed due to: ' + status);
-                }
-            });
-        },
-        plotRestaurantMarkers() {
-            this.clearRestaurantMarkers();
-            for (const restaurant of this.restaurants) {
-                const position = new gm.LatLng(restaurant.geometry.location.lat(), restaurant.geometry.location.lng());
-                const marker = new gm.Marker({
-                    map: map,
-                    position: position,
-                    icon: {
-                        url: 'image/restaurant.png',
-                        scaledSize: new google.maps.Size(34, 34),
-                    },
-                });
+                                    const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                                        new google.maps.LatLng(this.lat, this.lng),
+                                        position
+                                    );
+                                    const distanceKm = (distance / 1000).toFixed(2);
 
-                const info = new gm.InfoWindow();
-
-                marker.addListener('click', () => {
-                    if (!this.enableShowRoute) {
-                        this.placesService.getDetails({ placeId: restaurant.place_id }, (place, status) => {
-                            if (status === google.maps.places.PlacesServiceStatus.OK) {
-                                const hours = place.opening_hours ? place.opening_hours.weekday_text.join('<br>') : 'Opening hours not available';
-                                const rating = place.rating ? `Rating: ${place.rating}` : 'Rating not available';
-
-                                const distance = google.maps.geometry.spherical.computeDistanceBetween(
-                                    new google.maps.LatLng(this.lat, this.lng),
-                                    position
-                                );
-                                const distanceKm = (distance / 1000).toFixed(2);
-
-                                info.setContent(`
+                                    info.setContent(`
                                     <div id="info" style="text-align: center;">
                                         <div style="position: relative; display: inline-block;">
                                             <img src="${place.photos ? place.photos[0].getUrl({ maxWidth: 200, maxHeight: 200 }) : 'image/no-image.png'}"
@@ -565,126 +564,144 @@
                                         </div>
                                     </div>
                                 `);
-                                info.open(map, marker);
+                                    info.open(map, marker);
+                                }
+                            });
+                        }
+                    });
+
+                    marker.addListener('click', () => {
+                        if (this.enableShowRoute) {
+                            if (this.routeToRestaurant) {
+                                this.routeToRestaurant = false;
+                                this.directionsRenderer.setDirections({ routes: [] });
+                            } else {
+                                this.routeToRestaurant = true;
+                                this.calculateAndDisplayRoute(position, 'restaurant');
+                            }
+                        }
+                    });
+
+                    this.restaurantMarkers.push(marker);
+                }
+            },
+            panToCenter() {
+                const center = new gm.LatLng(this.lat, this.lng);
+                map.panTo(center);
+            },
+            change(event, field) {
+                const newValue = event.target.value;
+
+                if (field === 'meter') {
+                    this.circle.setRadius(parseInt(newValue));
+                    this.retrieveUsers()
+
+                } else if (field === 'gender') {
+                    this.retrieveUsers();
+                }
+            },
+            getLocation() {
+                const options = {
+                    enableHighAccuracy: true,
+                };
+
+                navigator.geolocation.getCurrentPosition(
+                    this.success,
+                    this.fail,
+                    options
+                );
+            },
+            success(position) {
+                this.lat = position.coords.latitude;
+                this.lng = position.coords.longitude;
+                this.acc = position.coords.accuracy;
+
+                const p = new gm.LatLng(this.lat, this.lng);
+                this.player.setPosition(p);
+                map.panTo(p);
+
+                if (!this.circle) {
+                    this.circle = new gm.Circle({
+                        map: map,
+                        center: p,
+                        radius: parseInt(this.meter) || 0,
+                        fillColor: '#AA0000',
+                        fillOpacity: 0.35,
+                        strokeColor: '#AA0000',
+                        strokeOpacity: 0.8,
+                        strokeWeight: 2,
+                    });
+                } else {
+                    this.circle.setCenter(p);
+                }
+
+                this.saveCoordToCloud();
+            },
+            fail(error) {
+                alert(`ERROR: (${error.code}) ${error.message}`);
+            },
+            saveCoordToCloud() {
+                let payload = {
+                    latitude: this.lat,
+                    longitude: this.lng,
+                    accuracy: this.acc
+                }
+
+                STUDENTS.doc(this.$root.user.email).set(payload, { merge: true });
+            },
+
+            async retrieveUsers() {
+                try {
+                    this.students = [];
+                    let query = STUDENTS;
+                    if (this.gender !== 'all') {
+                        query = query.where('gender', '==', this.gender);
+                    }
+                    const querySnapshot = await query.get();
+
+                    if (this.player) {
+                        const playerPosition = this.player.getPosition();
+                        querySnapshot.forEach(doc => {
+                            const student = doc.data();
+                            if (doc.id !== this.$root.user.email.toLowerCase()) {
+                                const studentPosition = new gm.LatLng(student.latitude, student.longitude);
+                                const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, playerPosition);
+                                student.distance = distance
+                                this.students.push(student);
                             }
                         });
-                    }
-                });
 
-                marker.addListener('click', () => {
-                    if (this.enableShowRoute) {
-                        if (this.routeToRestaurant) {
-                            this.routeToRestaurant = false;
-                            this.directionsRenderer.setDirections({ routes: [] });
-                        } else {
-                            this.routeToRestaurant = true;
-                            this.calculateAndDisplayRoute(position, 'restaurant');
-                        }
-                    }
-                });
-
-                this.restaurantMarkers.push(marker);
-            }
-        },
-        panToCenter() {
-            const center = new gm.LatLng(this.lat, this.lng);
-            map.panTo(center);
-        },
-        change(event, field) {
-            const newValue = event.target.value;
-
-            if (field === 'meter') {
-                this.circle.setRadius(parseInt(newValue));
-                this.retrieveUsers()
-
-            } else if (field === 'gender') {
-                this.retrieveUsers();
-            }
-        },
-        getLocation() {
-            const options = {
-                enableHighAccuracy: true,
-            };
-
-            navigator.geolocation.getCurrentPosition(
-                this.success,
-                this.fail,
-                options
-            );
-        },
-        success(position) {
-            this.lat = position.coords.latitude;
-            this.lng = position.coords.longitude;
-            this.acc = position.coords.accuracy;
-
-            const p = new gm.LatLng(this.lat, this.lng);
-            this.player.setPosition(p);
-            map.panTo(p);
-
-            if (!this.circle) {
-                this.circle = new gm.Circle({
-                    map: map,
-                    center: p,
-                    radius: parseInt(this.meter) || 0,
-                    fillColor: '#AA0000',
-                    fillOpacity: 0.35,
-                    strokeColor: '#AA0000',
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
-                });
-            } else {
-                this.circle.setCenter(p);
-            }
-
-            this.saveCoordToCloud();
-        },
-        fail(error) {
-            alert(`ERROR: (${error.code}) ${error.message}`);
-        },
-        saveCoordToCloud() {
-            let payload = {
-                latitude: this.lat,
-                longitude: this.lng,
-                accuracy: this.acc
-            }
-
-            STUDENTS.doc(this.$root.user.email).set(payload, { merge: true });
-        },
-
-        async retrieveUsers() {
-            try {
-                this.students = [];
-                let query = STUDENTS;
-                if (this.gender !== 'all') {
-                    query = query.where('gender', '==', this.gender);
-                }
-                const querySnapshot = await query.get();
-
-                if (this.player) {
-                    const playerPosition = this.player.getPosition();
-                    querySnapshot.forEach(doc => {
-                        const student = doc.data();
-                        if (doc.id !== this.$root.user.email.toLowerCase()) {
+                        this.nearbyStudents = this.students.filter(student => {
                             const studentPosition = new gm.LatLng(student.latitude, student.longitude);
                             const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, playerPosition);
-                            student.distance = distance
-                            this.students.push(student);
-                        }
-                    });
+                            // Convert distance from meters to kilometers and check if it's within the specified radius
+                            return distance / 1000 <= parseInt(this.meter) / 1000;
+                        });
 
-                    this.nearbyStudents = this.students.filter(student => {
-                        const studentPosition = new gm.LatLng(student.latitude, student.longitude);
-                        const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, playerPosition);
-                        // Convert distance from meters to kilometers and check if it's within the specified radius
-                        return distance / 1000 <= parseInt(this.meter) / 1000;
-                    });
-
-                    this.plotMarkers();
+                        this.plotMarkers();
+                    }
+                } catch (error) {
+                    console.error('Error retrieving users:', error);
                 }
-            } catch (error) {
-                console.error('Error retrieving users:', error);
-            }
-        },
+            },
+
+            plotMarkers() {
+                this.clearUserMarkers();
+                for (const student of this.students) {
+                    const position = new gm.LatLng(student.latitude, student.longitude);
+
+                    const marker = new gm.Marker({
+                        map,
+                        position,
+                        icon: {
+                            url: student.photo || 'image/photo.png',
+                            scaledSize: new gm.Size(34, 34),
+                        },
+                    });
+
+                    const info = new gm.InfoWindow();
+
+                    let timeout = null;
 
                     marker.addListener('click', e => {
                         if (!this.enableShowRoute) {
@@ -720,28 +737,6 @@
 
                             info.setContent(`
                                 <div id="info" style="text-align: center;">
-        plotMarkers() {
-            this.clearUserMarkers();
-            for (const student of this.students) {
-                const position = new gm.LatLng(student.latitude, student.longitude);
-
-                const marker = new gm.Marker({
-                    map,
-                    position,
-                    icon: {
-                        url: student.photo || 'image/photo.png',
-                        scaledSize: new gm.Size(34, 34),
-                    },
-                });
-
-                const info = new gm.InfoWindow();
-
-                let timeout = null;
-
-                marker.addListener('click', e => {
-                    if (!this.enableShowRoute) {
-                        info.setContent(`
-                            <div id="info" style="text-align: center;">
                                     <div style="position: relative; display: inline-block;">
                                         <img src="${student.photo}"
                                             style="
@@ -764,52 +759,61 @@
                                     </div>
                                 </div>
                             `);
-                        info.open(map, marker);
+                            info.open(map, marker);
 
                             this.trackProfileView(student.email)
 
                             clearTimeout(timeout);
                             timeout = setTimeout(_ => info.close(), 3000);
-                        clearTimeout(timeout);
-                        timeout = setTimeout(_ => info.close(), 3000);
-                    }
-                });
-
-                marker.addListener('click', () => {
-                    if (this.enableShowRoute) {
-                        if (this.routeToUser) {
-                            this.routeToUser = false;
-                            this.directionsRenderer.setDirections({ routes: [] });
-                        } else {
-                            this.routeToUser = true;
-                            this.displayRouteToUser(student)
                         }
-                    }
-                });
+                    });
 
-                this.markers.push(marker);
-            }
+                    marker.addListener('click', () => {
+                        if (this.enableShowRoute) {
+                            if (this.routeToUser) {
+                                this.routeToUser = false;
+                                this.directionsRenderer.setDirections({ routes: [] });
+                            } else {
+                                this.routeToUser = true;
+                                this.displayRouteToUser(student)
+                            }
+                        }
+                    });
+
+                    this.markers.push(marker);
+                }
+            },
+
+            clearUserMarkers() {
+                for (let i = 0; i < this.markers.length; i++) {
+                    this.markers[i].setVisible(false);
+                }
+                this.markers = [];
+            },
+            clearCafeMarkers() {
+                for (let i = 0; i < this.cafeMarkers.length; i++) {
+                    this.cafeMarkers[i].setVisible(false);
+                }
+                this.cafeMarkers = [];
+            },
+            clearRestaurantMarkers() {
+                for (let i = 0; i < this.restaurantMarkers.length; i++) {
+                    this.restaurantMarkers[i].setVisible(false);
+                }
+                this.restaurantMarkers = [];
+            },
         },
 
-        clearUserMarkers() {
-            for (let i = 0; i < this.markers.length; i++) {
-                this.markers[i].setVisible(false);
+        created() {
+            if (!this.$root.user) {
+                this.$router.push('/sign-in');
+                return;
+            } else {
+                this.$root.title = 'Welcome to Minder !';
             }
-            this.markers = [];
+
+            document.title = 'Minder';
         },
-        clearCafeMarkers() {
-            for (let i = 0; i < this.cafeMarkers.length; i++) {
-                this.cafeMarkers[i].setVisible(false);
-            }
-            this.cafeMarkers = [];
-        },
-        clearRestaurantMarkers() {
-            for (let i = 0; i < this.restaurantMarkers.length; i++) {
-                this.restaurantMarkers[i].setVisible(false);
-            }
-            this.restaurantMarkers = [];
-        },
-    },
 
         created() {
         if(!this.$root.user) {
