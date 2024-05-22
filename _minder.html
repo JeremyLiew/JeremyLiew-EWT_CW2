@@ -93,8 +93,8 @@
                             <button type="button" id="document-file" @click="triggerFileDocument">File</button>
                             <button type="button" @click="triggerImage">Image</button>
                             <button type="button" @click="showGallery">Gallery</button>
-                            <button @click="triggerMp3">MP3</button>
-                            <button @click="toggleWebcam">{{ webcamActive ? 'Capture Image' : 'WebCam' }}</button>
+                            <button type="button" @click="triggerMp3">MP3</button>
+                            <button type="button" @click="toggleWebcam">{{ webcamActive ? 'Capture Image' : 'WebCam' }}</button>
                             <input type="file" ref="chatFile" accept="image/*" hidden @change="handleFileImage"
                                 multiple>
                             <input type="file" id="fileInput" accept=".pdf, .doc, .docx" ref="fileInput" hidden multiple
@@ -741,7 +741,7 @@
                                 $('#chat-box').append(`
                                     <li class="sender">
                                         <div>
-                                            <b>${this.senderName}</b><br>
+                                            <b>${this.senderName}</b> <br>
                                             <a>${newMessage}</a>
                                             <a style="font-size: 10px;">${history.date} ${history.time}</a>
                                         </div>
