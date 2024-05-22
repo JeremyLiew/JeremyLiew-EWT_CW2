@@ -73,7 +73,7 @@
 
                     <div id="chat-footer">
                         <form @keydown.enter.prevent="sendMessage" id="chat-form" autocomplete="off">
-                            <button @click="toggleSpeech">{{ speech ? 'Stop Speech':'Start Speech' }}</button>
+                            <button :disabled="speech" @click="startSpeechRecognition">{{ speech ? 'Stop Speech':'Start Speech' }}</button>
                             <input v-model="message" type="text" id="message" placeholder="Enter Message" autofocus
                                 ref="message">
                             <div class="emoji-picker">
@@ -1107,14 +1107,6 @@
                 }
             },
 
-            toggleSpeech() {
-                if (!this.speech) {
-                    this.startSpeechRecognition();
-                } else {
-                    this.stopSpeechRecognition();
-                }
-            },
-
             startSpeechRecognition() { // close will continue recording
                 if (!('webkitSpeechRecognition' in window)) {
                     alert('Speech recognition is not supported in this browser');
@@ -1130,28 +1122,26 @@
                     this.speech = true;
                 };
 
+                let silenceTimer;
+
                 recognition.onresult = (event) => {
                     const transcript = Array.from(event.results)
                         .map(result => result[0].transcript)
                         .join('');
                     // Set the transcribed text as the value of the input message field
                     this.message = transcript;
+
+                    silenceTimer = setTimeout(() => {
+                        recognition.stop();
+                        this.speech = false;
+                    }, 2000); // Stop after 2 seconds of silence
                 };
 
                 recognition.onerror = (event) => {
                     console.error('Speech recognition error:', event.error);
                 };
 
-                recognition.onend = () => {
-                    this.speech = false;
-                };
-
                 recognition.start();
-            },
-
-            stopSpeechRecognition() {
-                // Stop the speech recognition
-                this.speech = false;
             },
 
             handleMp3(event) {
