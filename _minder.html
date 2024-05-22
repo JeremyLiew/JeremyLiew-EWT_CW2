@@ -73,7 +73,8 @@
 
                     <div id="chat-footer">
                         <form @keydown.enter.prevent="sendMessage" id="chat-form" autocomplete="off">
-                            <button :disabled="speech" @click="startSpeechRecognition">{{ speech ? 'Stop Speech':'Start Speech' }}</button>
+                            <button :disabled="speech" @click="startSpeechRecognition">{{ speech ? 'Stop Speech':'Start
+                                Speech' }}</button>
                             <input v-model="message" type="text" id="message" placeholder="Enter Message" autofocus
                                 ref="message">
                             <div class="emoji-picker">
@@ -110,9 +111,9 @@
             </div>
 
             <div>
-                <dialog id="chat-dialog">
+                <dialog id="chat-dialog" ref="chatDialog">
                     <form method="dialog"><button @click="closeDialog">❌</button></form>
-                    <div ref="chatContainer"></div>
+                    <div ref="chatContainer" id="chatContainer"></div>
                 </dialog>
             </div>
 
@@ -931,7 +932,7 @@
                 $('#chat-box').append(`
                     <li class="sender">
                     <div>
-                        <img src="${url}" alt="Image" />
+                        <img src="${url}" alt="Image" class="image"/>
                         <a style="font-size: 10px;">${dateTime.date} ${dateTime.time}</a>
                     </div>
                     </li>
@@ -1045,7 +1046,8 @@
                 CHATS.doc().set(data);
             },
 
-            showGallery() { // cannot show in the Gallery
+            showGallery() {
+                $('#chatContainer').empty();
                 const images = document.querySelectorAll('.image');
                 if (images.length > 0) {
                     const clonedImages = Array.from(images).map(image => image.cloneNode(true));
@@ -1085,13 +1087,13 @@
                 this.isCapturing = true;
                 const canvas = document.createElement('canvas');
                 const video = this.$refs.video;
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
+                canvas.width = 200;
+                canvas.height = 200;
                 const context = canvas.getContext('2d');
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const dateTime = this.generateDateTime(); // Assuming generateDateTime is defined
                 const imageDataURL = canvas.toDataURL('image/webp');
-                this.sendImageMessage(imageDataURL,dateTime);
+                this.sendImageMessage(imageDataURL, dateTime);
                 this.closeCamera();
             },
 
@@ -1470,8 +1472,8 @@
         height: 20px;
     }
 
-        /* chat box */
-        #chat-window {
+    /* chat box */
+    #chat-window {
         position: absolute;
         left: 300px;
         top: 300px;
