@@ -531,7 +531,6 @@
                 let payload = {
                     latitude: this.lat,
                     longitude: this.lng,
-                    accuracy: this.acc
                 }
 
                 STUDENTS.doc(this.$root.user.email).set(payload, { merge: true });
