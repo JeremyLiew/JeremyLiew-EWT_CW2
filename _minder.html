@@ -739,6 +739,10 @@
                             newMessage = newMessage.replace(/\*(.*?)\*/g, '<b>$1</b>');
                             newMessage = newMessage.replace(/_(.*?)_/g, '<u>$1</u>');
                             newMessage = newMessage.replace(/#(.*?)#/g, '<i>$1</i>');
+                            newMessage = newMessage.replace(/~~(.*?)~~/g, '<s>$1</s>'); // Strikethrough
+                            newMessage = newMessage.replace(/`(.*?)`/g, '<code>$1</code>'); // Monospace
+                            newMessage = newMessage.replace(/\^(.*?)\^/g, '<sup>$1</sup>'); // Superscript
+                            newMessage = newMessage.replace(/~(.*?)~/g, '<sub>$1</sub>');   // Subscript
 
                             if (history.senderEmail === this.senderEmail) {
                                 $('#chat-box').append(`
