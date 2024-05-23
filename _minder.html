@@ -61,7 +61,7 @@
                 <div id="chat-lobby">
                     <div id="chat-header">
                         <h1>{{ this.receiverName }}</h1>
-                        <div id="closeChat" style="background-color: #333;"><form method="closeChat" style=""><button @click="closeChat">❌</button></form></div>
+                        <div id="closeChat" style="background-color: #333;"><form method="closeChat"><button style="cursor: pointer;" @click="closeChat">❌</button></form></div>
                     </div>
 
                     <div id="chat-body" @dragenter.prevent="handleDragEnter" @dragover.prevent="handleDragOver"
@@ -111,7 +111,7 @@
 
             <div>
                 <dialog id="chat-dialog" ref="chatDialog">
-                    <form method="dialog"><button @click="closeDialog">❌</button></form>
+                    <form method="dialog"><button style="cursor: pointer;" @click="closeDialog">❌</button></form>
                     <div ref="chatContainer" id="chat-container"></div>
                 </dialog>
             </div>
@@ -1459,6 +1459,10 @@
         width: 24px;
     }
 
+    #panel button {
+        cursor: pointer;
+    }
+
     #panel * {
         vertical-align: middle;
     }
@@ -1494,11 +1498,11 @@
         height: 20px;
     }
 
-        /* chat box */
-        #chat-window {
+    /* chat box */
+    #chat-window {
         position: absolute;
         left: 300px;
-        top: 200px;
+        top: 170px;
         width: 700px;
         background: white;
         height: 500px;
@@ -1563,7 +1567,7 @@
     #chat-header h1 {
         flex: 1;
         margin: 0;
-        background: url(../image/favicon.png) no-repeat left center / 32px 32px;
+        background: url(../image/chat.png) no-repeat left center / 32px 32px;
         padding-left: 40px;
     }
 
