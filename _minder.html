@@ -735,9 +735,8 @@
 
                     this.historyData.forEach(history => {
                         if (history.message != null) {
-                            let newMessage = history.message.replace(badwords, '******');
+                            let newMessage = history.message.replace(badwords, '@@@@');
 
-                            newMessage = newMessage.replace(/\*(.*?)\*/g, '<b>$1</b>');
                             newMessage = newMessage.replace(/_(.*?)_/g, '<u>$1</u>');
                             newMessage = newMessage.replace(/#(.*?)#/g, '<i>$1</i>');
                             newMessage = newMessage.replace(/~~(.*?)~~/g, '<s>$1</s>'); // Strikethrough
@@ -749,7 +748,7 @@
                                 $('#chat-box').append(`
                                     <li class="sender">
                                         <div>
-                                            <b>${this.senderName} :</b><a>${newMessage}</a><br>
+                                            <b>${this.senderName} :</b><a> ${newMessage}</a><br>
                                             <a style="font-size: 10px;">${history.date} ${history.time}</a>
                                         </div>
                                     </li>
@@ -920,9 +919,8 @@
 
             sendTextMessage(message, dateTime) {
                 let badwords = /fuck|sohai|jibai/gi;
-                let newMessage = message.replace(badwords, '******');
+                let newMessage = message.replace(badwords, '@@@@');
 
-                newMessage = newMessage.replace(/\*(.*?)\*/g, '<b>$1</b>');
                 newMessage = newMessage.replace(/_(.*?)_/g, '<u>$1</u>');
                 newMessage = newMessage.replace(/#(.*?)#/g, '<i>$1</i>');
                 newMessage = newMessage.replace(/~~(.*?)~~/g, '<s>$1</s>'); // Strikethrough
@@ -930,10 +928,11 @@
                 newMessage = newMessage.replace(/\^(.*?)\^/g, '<sup>$1</sup>'); // Superscript
                 newMessage = newMessage.replace(/~(.*?)~/g, '<sub>$1</sub>');   // Subscript
 
+
                 $('#chat-box').append(`
                     <li class="sender">
                     <div>
-                        <b>${this.senderName}: </b><a>${newMessage}</a><br>
+                        <b>${this.senderName}: </b><a> ${newMessage}</a><br>
                         <a style="font-size: 10px;">${dateTime.date} ${dateTime.time}</a>
                     </div>
                     </li>
