@@ -540,31 +540,39 @@
                 try {
                     this.students = [];
                     let query = STUDENTS;
+
                     if (this.gender !== 'all') {
                         query = query.where('gender', '==', this.gender);
                     }
-                    const querySnapshot = await query.get();
 
-                    if (this.player) {
-                        const playerPosition = this.player.getPosition();
-                        querySnapshot.forEach(doc => {
-                            const student = doc.data();
-                            if (doc.id !== this.$root.user.email.toLowerCase()) {
+                    const processSnapshot = async (querySnapshot) => {
+                        this.students = [];
+                        if (this.player) {
+                            const playerPosition = this.player.getPosition();
+                            querySnapshot.forEach(doc => {
+                                const student = doc.data();
+                                if (doc.id !== this.$root.user.email.toLowerCase()) {
+                                    const studentPosition = new gm.LatLng(student.latitude, student.longitude);
+                                    const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, playerPosition);
+                                    student.distance = distance;
+                                    this.students.push(student);
+                                }
+                            });
+
+                            this.nearbyStudents = this.students.filter(student => {
                                 const studentPosition = new gm.LatLng(student.latitude, student.longitude);
                                 const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, playerPosition);
-                                student.distance = distance
-                                this.students.push(student);
-                            }
-                        });
+                                return distance / 1000 <= parseInt(this.meter) / 1000;
+                            });
 
-                        this.nearbyStudents = this.students.filter(student => {
-                            const studentPosition = new gm.LatLng(student.latitude, student.longitude);
-                            const distance = google.maps.geometry.spherical.computeDistanceBetween(studentPosition, playerPosition);
-                            return distance / 1000 <= parseInt(this.meter) / 1000;
-                        });
+                            this.plotMarkers();
+                        }
+                    };
 
-                        this.plotMarkers();
-                    }
+                    // Listen for real-time updates
+                    this.unsubscribe = query.onSnapshot(async (querySnapshot) => {
+                        await processSnapshot(querySnapshot);
+                    });
                 } catch (error) {
                     console.error('Error retrieving users:', error);
                 }
@@ -791,7 +799,7 @@
                                     <li class="sender">
                                         <div>
                                             <b>${this.senderName}: </b> sent a document<br>
-                                            <a href="${history.fileUrl}" download="${history.fileName}">${history.fileType}</a><br>
+                                            <a href="${history.fileUrl}" download="${history.fileName}">${history.fileName}</a><br>
                                             <a style="font-size: 10px;">${history.date} ${history.time}</a>
                                         </div>
                                     </li>
@@ -801,7 +809,7 @@
                                     <li class="receiver">
                                         <div>
                                             <b>${this.receiverName}: </b> sent a document<br>
-                                            <a href="${history.fileUrl}" download="${history.fileName}">${history.fileType}</a><br>
+                                            <a href="${history.fileUrl}" download="${history.fileName}">${history.fileName}</a><br>
                                             <a style="font-size: 10px;">${history.date} ${history.time}</a>
                                         </div>
                                     </li>
@@ -1002,7 +1010,7 @@
                     <li class="sender">
                     <div>
                         <b>${this.senderName}: </b><br>
-                        <a href="${url}" target="_blank">${fileName}</a>
+                        <a href="${url}" target="_blank"></a> ${fileName}
                         <a style="font-size: 10px;">${dateTime.date} ${dateTime.time}</a>
                     </div>
                     </li>
@@ -1420,6 +1428,12 @@
             this.directionsRenderer.setMap(map);
 
             this.retrieveUsers();
+        },
+
+        beforeDestroy() {
+            if (this.unsubscribe) {
+                this.unsubscribe();
+            }
         },
 
         unmounted() {
