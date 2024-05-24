@@ -73,7 +73,7 @@
 
                     <div id="chat-footer">
                         <form @keydown.enter.prevent="sendMessage" id="chat-form" autocomplete="off">
-                            <button :disabled="speech" @click="startSpeechRecognition">{{ speech ? 'Stop Speech':'Start Speech' }}</button>
+                            <button type="button" :disabled="speech" @click="startSpeechRecognition">{{ speech ? 'Stop Speech':'Start Speech' }}</button>
                             <input v-model="message" type="text" id="message" placeholder="Enter Message" autofocus
                                 ref="message">
                             <div class="emoji-picker">
