@@ -27,7 +27,7 @@
 <script>
     app.component({
         data: () => ({
-            
+            email:'',
         }),
 
         methods: {
@@ -42,6 +42,21 @@
                     .ref('photos')
                     .child(user.uid + '.webp')
                     .delete();
+
+
+                    this.email = this.$root.user.email;
+
+                    DB.collection('user')
+                    .where('email', '==', this.email)
+                    .get()
+                    .then(querySnapshot => {
+                        querySnapshot.forEach(doc => {
+                            doc.ref.delete()
+                        });
+                    })
+                    .catch(error => {
+                        console.error("Error getting documents: ", error);
+                    });
 
                 user
                     .delete()
