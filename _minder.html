@@ -799,7 +799,7 @@
                                     <li class="sender">
                                         <div>
                                             <b>${this.senderName}: </b> sent a document<br>
-                                            <a href="${history.fileUrl}" download="${history.fileName}">${history.fileType}</a><br>
+                                            <a href="${history.fileUrl}" download="${history.fileName}">${history.fileName}</a><br>
                                             <a style="font-size: 10px;">${history.date} ${history.time}</a>
                                         </div>
                                     </li>
@@ -809,7 +809,7 @@
                                     <li class="receiver">
                                         <div>
                                             <b>${this.receiverName}: </b> sent a document<br>
-                                            <a href="${history.fileUrl}" download="${history.fileName}">${history.fileType}</a><br>
+                                            <a href="${history.fileUrl}" download="${history.fileName}">${history.fileName}</a><br>
                                             <a style="font-size: 10px;">${history.date} ${history.time}</a>
                                         </div>
                                     </li>
@@ -1010,7 +1010,7 @@
                     <li class="sender">
                     <div>
                         <b>${this.senderName}: </b><br>
-                        <a href="${url}" target="_blank">${fileName}</a>
+                        <a href="${url}" target="_blank"></a> ${fileName}
                         <a style="font-size: 10px;">${dateTime.date} ${dateTime.time}</a>
                     </div>
                     </li>
