@@ -220,7 +220,7 @@
                             // Prepare data for Firestore
                             const data = {
                                 name: this.name,
-                                email: this.email,
+                                email: this.email.toLowerCase(),
                                 gender: this.gender,
                                 latitude: this.lat,
                                 longitude: this.lng,

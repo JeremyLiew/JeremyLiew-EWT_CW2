@@ -162,6 +162,10 @@
                     let payload = {
                         name: this.name,
                         caption: this.caption,
+                        facebookLink : this.facebookLink,
+                        twitterLink : this.twitterLink,
+                        instagramLink : this.instagramLink,
+                        linkedinLink : this.linkedinLink,
                     };
 
                     STUDENTS.doc(this.$root.user.email).set(payload, { merge: true }).then(() => {
@@ -187,11 +191,12 @@
 
             this.email = this.$root.user.email;
 
-            DB.collection('user')
+            STUDENTS
             .where('email', '==', this.email)
             .get()
             .then(querySnapshot => {
                 querySnapshot.forEach(doc => {
+                    console.log(doc.data())
                     this.gender = doc.data().gender;
                     this.caption = doc.data().caption;
                     this.profileViews = doc.data().profileViews;
